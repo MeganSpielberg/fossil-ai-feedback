@@ -5,19 +5,19 @@ Fossil AI Feedback is a master's research project investigating how artificial i
 
 ## Project Overview
 
-This research explores interactive AI feedback mechanisms to help users take better photos of fossils and provide relevant metadata (e.g., location, scale, orientation). The goal is to understand how feedback can improve the quality and usefulness of fossil image data for research and automated classification.
+This research explores interactive AI feedback mechanisms to help users take better images of fossils and provide relevant metadata (e.g., location, scale, orientation). The goal is to understand how feedback can improve the quality and usefulness of fossil image data for research and automated classification.
 
 ## Research Goals
 
 - Analyze the impact of AI-driven feedback on user behavior during fossil image collection.
 - Identify effective strategies for prompting users to provide necessary metadata.
 - Assess improvements in fossil classification accuracy resulting from improved data collection.
-- Evaluate feedback mechanisms with a user test (questionnair)
+- Evaluate the feedback given by AI and its impact on a user test (questionnaire)
 
 ## Methodology
 
-- Literature review of AI feedback systems and image collection practices in citizen science projects.
-- Design and evaluation of feedback prototypes (proof of concept).
+- Literature review of (real-time) AI feedback systems and image collection practices in citizen science projects.
+- Design and evaluation of prototypes with AI giving real-time feedback during image capture (proof of concept).
 - User studies to observe how feedback influences image and metadata quality.
 - Analysis of collected data to measure improvements in classification and dataset utility.
 
