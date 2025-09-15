@@ -1,79 +1,41 @@
-# Academic Project Page Template
+# Fossil AI Feedback (placeholder title)
+TODO: Better title
 
-> **Update (September 2025)**: This template has been modernized with better design, SEO, and mobile support. For the original version, see the [original-version branch](https://github.com/eliahuhorwitz/Academic-project-page-template/tree/original-version).
+Fossil AI Feedback is a master's research project investigating how artificial intelligence can guide users to capture higher-quality fossil images and supply essential metadata, improving image collection and fossil classification.
 
-A clean, responsive template for academic project pages.
+## Project Overview
 
+This research explores interactive AI feedback mechanisms to help users take better photos of fossils and provide relevant metadata (e.g., location, scale, orientation). The goal is to understand how feedback can improve the quality and usefulness of fossil image data for research and automated classification.
 
-Example project pages built using this template are:
-- https://horwitz.ai/probex
-- https://vision.huji.ac.il/probegen
-- https://horwitz.ai/mother
-- https://horwitz.ai/spectral_detuning
-- https://vision.huji.ac.il/ladeda
-- https://vision.huji.ac.il/dsire
-- https://horwitz.ai/podd
-- https://dreamix-video-editing.github.io
-- https://horwitz.ai/conffusion
-- https://horwitz.ai/3d_ads/
-- https://vision.huji.ac.il/ssrl_ad
-- https://vision.huji.ac.il/deepsim
+## Research Goals
 
+- Analyze the impact of AI-driven feedback on user behavior during fossil image collection.
+- Identify effective strategies for prompting users to provide necessary metadata.
+- Assess improvements in fossil classification accuracy resulting from improved data collection.
+- Evaluate feedback mechanisms with a user test (questionnair)
 
+## Methodology
 
-## Start using the template
-To start using the template click on `Use this Template`.
+- Literature review of AI feedback systems and image collection practices in citizen science projects.
+- Design and evaluation of feedback prototypes (proof of concept).
+- User studies to observe how feedback influences image and metadata quality.
+- Analysis of collected data to measure improvements in classification and dataset utility.
 
-The template uses html for controlling the content and css for controlling the style. 
-To edit the websites contents edit the `index.html` file. It contains different HTML "building blocks", use whichever ones you need and comment out the rest.  
+## Proof of Concept
 
-**IMPORTANT!** Make sure to replace the `favicon.ico` under `static/images/` with one of your own, otherwise your favicon is going to be a dreambooth image of me.
+Any code or tools developed in this repository are for demonstration and research purposes only. They are not intended as final products.
 
-## What's New
+## Usage
 
-- Modern, clean design with better mobile support
-- Improved SEO with proper meta tags and structured data
-- Performance improvements (lazy loading, optimized assets)
-- More Works dropdown
-- Copy button for BibTeX citations
-- Better accessibility
+1. Clone the repository.
+TODO
 
-## Components
+## Documentation
 
-- Teaser video
-- Image carousel
-- YouTube video embedding
-- Video carousel
-- PDF poster viewer
-- BibTeX citation
-
-## Customization
-
-The HTML file has TODO comments showing what to replace:
-
-- Paper title, authors, institution, conference
-- Links (arXiv, GitHub, etc.)
-- Abstract and descriptions  
-- Videos, images, and PDFs
-- Related works in the dropdown
-- Meta tags for SEO and social sharing
-
-### Meta Tags
-The template includes meta tags for better search engine visibility and social media sharing. These appear in the `<head>` section and help with:
-- Google Scholar indexing
-- Social media previews (Twitter, Facebook, LinkedIn)
-- Search engine optimization
-
-Create a 1200x630px social preview image at `static/images/social_preview.png`.
-
-## Tips
-
-- Compress images with [TinyPNG](https://tinypng.com)
-- Use YouTube for large videos (>10MB)  
-- Replace the favicon in `static/images/`
-- Works with GitHub Pages
+TODO
 
 ## Acknowledgments
+
 Parts of this project page were adopted from the [Nerfies](https://nerfies.github.io/) page.
 
 ## Website License
