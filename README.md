@@ -1,4 +1,4 @@
-# Improving citizen science fossil submissions through research on real-time AI guidance and metadata quality
+# Improving citizen science fossil submissions through research on real-time AI guidance
 This is a master's research project investigating how artificial intelligence can guide users to capture higher-quality fossil images.
 
 ## Project Overview
