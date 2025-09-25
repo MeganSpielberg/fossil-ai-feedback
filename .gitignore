@@ -1,5 +1,8 @@
 # Node modules
 node_modules/
+.next/
+*.log
+.DS_Store
 
 # Build output
 build/
