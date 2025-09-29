@@ -31,3 +31,4 @@ Thumbs.db
 # Misc
 coverage/
 *.log
+*.csv
