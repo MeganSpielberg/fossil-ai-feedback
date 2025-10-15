@@ -1,140 +1,227 @@
+# main.py
 import streamlit as st
-from PIL import Image
-import numpy as np
+from streamlit_webrtc import webrtc_streamer, VideoTransformerBase, WebRtcMode
+from av import VideoFrame
 import cv2
+import numpy as np
+from PIL import Image
 from sklearn.cluster import KMeans
 from datetime import date
 import os
+import threading
 
 st.set_page_config(page_title="Real time AI feedback", layout="wide")
 st.title("Real time AI feedback prototype")
-st.markdown("""
-<style>
-div[data-testid="stCameraInput"] video {
-    width: 100% !important;
-    height: 80vh !important;  /* taller for vertical phones */
-    object-fit: cover;
-    border-radius: 8px;
-}
-</style>
-""", unsafe_allow_html=True)
 
-st.components.v1.html("""
-<script>
-document.documentElement.requestFullscreen().catch(()=>{});
-</script>
-""")
-
-# --- Session state ---
-if "photos" not in st.session_state:
-    st.session_state.photos = []
+# --- Initialize form state ---
 if "form_data" not in st.session_state:
     st.session_state.form_data = {"title": "", "date": date.today(), "location": ""}
 
-# --- Fossil quality analysis ---
-def analyze_fossil_quality(image: Image.Image):
-    img = np.array(image.convert("RGB"))
+st.subheader("📝 Submission Details")
+title = st.text_input(
+    "Title",
+    placeholder="e.g., Rock fossil",
+    value=st.session_state.form_data["title"],
+    key="title_input"
+)
+find_date = st.date_input(
+    "Date of Find",
+    value=st.session_state.form_data["date"],
+    key="date_input"
+)
+location = st.text_input(
+    "Location",
+    placeholder="e.g., City, Country or GPS coordinates",
+    value=st.session_state.form_data["location"],
+    key="location_input"
+)
+st.session_state.form_data["title"] = title
+st.session_state.form_data["date"] = find_date
+st.session_state.form_data["location"] = location
+# ---------- Session State ----------
+if "photos" not in st.session_state:
+    st.session_state.photos = []  # list of PIL images
+if "form" not in st.session_state:
+    st.session_state.form = {"title": "", "date": date.today(), "location": ""}
+if "mode" not in st.session_state:
+    st.session_state.mode = "Baseline"
+
+# For signaling capture from main thread to transformer callback
+CaptureLock = threading.Lock()
+capture_next_frame = {"flag": False}  # mutable container accessible from both threads
+# Stores captured frames (numpy BGR images) placed by transformer
+captured_frames_buffer = []
+
+# ---------- Quality Analysis (robust/local) ----------
+def analyze_fossil_quality_pil(pil_img: Image.Image):
+    """
+    Returns (feedback_list, metrics_dict).
+    Robust metrics: local sharpness (patch), percent dark/bright pixels, cluster-based background uniformity.
+    """
+    img = np.array(pil_img.convert("RGB"))
     gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-    feedback = []
+
     metrics = {}
+    feedback = []
 
-    # Lighting
-    dark_pct = np.mean(gray < 50)
-    bright_pct = np.mean(gray > 220)
-    metrics['dark_pct'] = round(dark_pct*100,1)
-    metrics['bright_pct'] = round(bright_pct*100,1)
-    feedback.append("⚠️ Too dark" if dark_pct > 0.2 else "✅ Lighting OK")
-    feedback.append("⚠️ Overexposed" if bright_pct > 0.2 else "✅ No overexposure")
+    # Lighting: percent of too-dark / too-bright pixels
+    dark_pct = float(np.mean(gray < 50))
+    bright_pct = float(np.mean(gray > 240))
+    metrics["dark_pct"] = round(dark_pct * 100, 2)
+    metrics["bright_pct"] = round(bright_pct * 100, 2)
+    if dark_pct > 0.15:
+        feedback.append("Significant dark regions — add more even light.")
+    else:
+        feedback.append("Lighting OK")
+    if bright_pct > 0.10:
+        feedback.append("Overexposed regions detected — reduce glare.")
+    else:
+        feedback.append("No major overexposure")
 
-    # Sharpness
+    # Sharpness: local Laplacian variance (minimum patch)
     h, w = gray.shape
-    patch_size = 100
-    min_var = 1e9
-    for y in range(0, h, patch_size):
-        for x in range(0, w, patch_size):
-            patch = gray[y:y+patch_size, x:x+patch_size]
-            var = cv2.Laplacian(patch, cv2.CV_64F).var()
+    patch = 120  # patch size — tune to your use case
+    min_var = np.inf
+    for y in range(0, h, patch):
+        for x in range(0, w, patch):
+            p = gray[y : y + patch, x : x + patch]
+            if p.size == 0:
+                continue
+            var = cv2.Laplacian(p, cv2.CV_64F).var()
             if var < min_var:
                 min_var = var
-    metrics['min_sharpness'] = round(min_var,1)
-    feedback.append("⚠️ Blurry regions" if min_var < 100 else "✅ Sharpness OK")
+    if not np.isfinite(min_var):
+        min_var = 0.0
+    metrics["min_sharpness"] = round(float(min_var), 2)
+    if min_var < 120:  # tuned threshold; raise if you want stricter
+        feedback.append("⚠️ Local blur detected — refocus or steady the camera.")
+    else:
+        feedback.append("✅ Sharpness OK")
 
-    # Background uniformity
-    small_img = cv2.resize(img, (100,100))
-    reshaped = small_img.reshape(-1,3)
-    kmeans = KMeans(n_clusters=3, n_init=10, random_state=42)
-    labels = kmeans.fit_predict(reshaped)
-    counts = np.bincount(labels)
-    dominant_pct = counts.max()/counts.sum()
-    metrics['dominant_bg_pct'] = round(dominant_pct*100,1)
-    feedback.append("⚠️ Cluttered background" if dominant_pct < 0.7 else "✅ Background OK")
+    # Background uniformity via KMeans clustering on a small resize
+    small = cv2.resize(img, (150, 150))
+    reshaped = small.reshape(-1, 3).astype(np.float32)
+    try:
+        kmeans = KMeans(n_clusters=3, n_init=10, random_state=0).fit(reshaped)
+        counts = np.bincount(kmeans.labels_)
+        dominant_pct = float(counts.max()) / counts.sum()
+    except Exception:
+        dominant_pct = 1.0
+    metrics["dominant_bg_pct"] = round(dominant_pct * 100, 2)
+    if dominant_pct < 0.7:
+        feedback.append("Background looks cluttered — use a uniform background.")
+    else:
+        feedback.append("Background OK")
 
     return feedback, metrics
 
-# --- Submission fields ---
-st.subheader("📝 Submission Details")
-title = st.text_input("Title", value=st.session_state.form_data["title"])
-find_date = st.date_input("Date of Find", value=st.session_state.form_data["date"])
-location = st.text_input("Location", value=st.session_state.form_data["location"])
-st.session_state.form_data.update({"title": title, "date": find_date, "location": location})
+# ---------- Video Transformer for real-time feedback ----------
+class RealTimeTransformer(VideoTransformerBase):
+    def __init__(self):
+        self.last_metrics = None
+        self.last_frame = None
+        self._transform_lock = threading.Lock()
 
-# --- Camera input ---
-st.subheader("📷 Take Fossil Photos")
-st.markdown("""
-**Instructions:**  
-- Use your phone camera.  
-- Ensure good lighting, uniform background, and sharp focus.  
-- You can take multiple photos and remove any before submitting.
-""")
+    def recv(self, frame: VideoFrame) -> VideoFrame:
+        img = frame.to_ndarray(format="bgr24")
+        with self._transform_lock:
+            self.last_frame = img.copy()
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        pil_img = Image.fromarray(img_rgb)
 
-# Make camera input larger and adaptive
-camera_container = st.container()
-with camera_container:
-    photo = st.camera_input("Capture a photo", key="camera_input")
+        # Optionally analyze every Nth frame (keep cost reasonable)
+        try:
+            feedback, metrics = analyze_fossil_quality_pil(pil_img)
+            self.last_metrics = metrics
+        except Exception as e:
+            feedback = ["Analysis error"]
+            self.last_metrics = {}
 
-if photo:
-    image = Image.open(photo)
-    st.image(image, caption="Captured Photo", use_container_width=True)
+        # Draw overlay: place first 3 feedback items
+        y = 30
+        for i, f in enumerate(feedback[:3]):
+            text = f
+            color = (0, 200, 0) if "✅" in text else (0, 165, 255)
+            cv2.putText(img, text, (10, y), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2, cv2.LINE_AA)
+            y += 30
 
-    # Quality feedback
-    feedback, metrics = analyze_fossil_quality(image)
-    st.subheader("📊 Image Quality Feedback")
-    for line in feedback:
-        st.write(line)
-    st.caption(f"Metrics: {metrics}")
+        # If main thread set capture flag, copy frame into buffer
+        if capture_next_frame["flag"]:
+            with CaptureLock:
+                captured_frames_buffer.append(img.copy())
+                capture_next_frame["flag"] = False
 
-    # Keep / discard
-    cols = st.columns([1,1])
-    if cols[0].button("✅ Keep Photo"):
-        st.session_state.photos.append(image)
-        st.success("Photo saved!")
-    if cols[1].button("🔁 Discard Photo"):
-        st.warning("Photo discarded.")
+        return VideoFrame.from_ndarray(img, format="bgr24")
 
-# --- Display saved photos ---
+# ---------- Streamlit UI Workflow ----------
+st.divider()
+st.markdown("#### Live Webcam Stream with Real-Time Quality Feedback")
+
+ctx = webrtc_streamer(
+    key="fossil-capture",
+    mode=WebRtcMode.SENDRECV,
+    video_transformer_factory=RealTimeTransformer,
+    media_stream_constraints={"video": True, "audio": False},
+    async_processing=True,
+)
+
+if ctx.video_transformer and st.button("📸 Capture Frame", type="primary"):
+    with ctx.video_transformer._transform_lock:
+        if ctx.video_transformer.last_frame is not None:
+            img_bgr = ctx.video_transformer.last_frame.copy()
+            img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+            pil_image = Image.fromarray(img_rgb)
+            st.session_state.photos.append(pil_image)
+            st.success("Frame captured!")
+        else:
+            st.warning("No video frame available yet.")
+
+st.markdown("#### Captured Photos and Analysis")
 if st.session_state.photos:
-    st.subheader("📸 Saved Photos")
-    for idx, img in enumerate(st.session_state.photos):
-        st.image(img, caption=f"Image {idx+1}", use_container_width=True)
-        if st.button(f"🗑 Remove {idx+1}", key=f"remove_{idx}"):
-            st.session_state.photos.pop(idx)
-            st.experimental_rerun()
+    for idx, pil_image in enumerate(st.session_state.photos):
+        cols = st.columns([3, 1])
+        with cols[0]:
+            st.image(pil_image, caption=f"Image {idx+1}", width=220)
+            feedback, metrics = analyze_fossil_quality_pil(pil_image)
+            st.markdown("**Quality Feedback:**")
+            for f in feedback:
+                st.write(f)
+            # Removed metrics printing to hide JSON
+            # st.markdown("**Metrics:**")
+            # st.json(metrics)
+        with cols[1]:
+            if st.button(f"🗑 Remove {idx+1}", key=f"remove_{idx}"):
+                st.session_state.photos.pop(idx)
+                st.experimental_rerun()
+else:
+    st.write("No photos captured yet.")
 
-# --- Submit button ---
+
+# --- Submit Section ---
+st.divider()
 if st.button("Submit"):
-    if not title or not location:
-        st.warning("⚠️ Please provide title and location.")
-    elif not st.session_state.photos:
-        st.warning("⚠️ Please take at least one photo.")
-    else:
-        folder_name = f"{title.replace(' ','_')}_{location.replace(' ','_')}_{find_date}"
-        os.makedirs("submissions", exist_ok=True)
-        save_dir = os.path.join("submissions", folder_name)
-        os.makedirs(save_dir, exist_ok=True)
-        for i, img in enumerate(st.session_state.photos, start=1):
-            img.save(os.path.join(save_dir, f"img_{i}.jpg"))
-        st.success(f"✅ Submission saved in `{save_dir}`")
+    title = st.session_state.form_data["title"].strip()
+    location = st.session_state.form_data["location"].strip()
+    find_date = st.session_state.form_data["date"]
 
-        # Clear state
+    if not title or not location:
+        st.warning("⚠️ Please provide a title and location before submitting.")
+    elif not st.session_state.photos:
+        st.warning("⚠️ Please take at least one image before submitting.")
+    else:
+        base_dir = "submissions"
+        os.makedirs(base_dir, exist_ok=True)
+        folder_name = f"{title.replace(' ', '_')}_{location.replace(' ', '_')}_{find_date}"
+        save_dir = os.path.join(base_dir, folder_name)
+        os.makedirs(save_dir, exist_ok=True)
+
+        # Save all captured images
+        for i, pil_image in enumerate(st.session_state.photos, start=1):
+            filepath = os.path.join(save_dir, f"img_{i}.jpg")
+            pil_image.save(filepath)
+
+        st.success(f"✅ Submission '{title}' saved successfully in `{save_dir}`")
+        # Reset all
         st.session_state.photos.clear()
-        st.session_state.form_data = {"title":"", "date": date.today(), "location":""}
+        st.session_state.form_data = {"title": "", "date": date.today(), "location": ""}
+        st.rerun()
