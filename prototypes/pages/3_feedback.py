@@ -118,7 +118,7 @@ if st.session_state.photos:
         st.image(img, caption=f"Image {idx+1}", use_container_width=True)
         if st.button(f"🗑 Remove {idx+1}", key=f"remove_{idx}"):
             st.session_state.photos.pop(idx)
-            st.experimental_rerun()
+            st.rerun()
 
 # --- Submit button ---
 if st.button("Submit"):

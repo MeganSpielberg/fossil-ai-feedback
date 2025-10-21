@@ -17,7 +17,7 @@ st.title("Real time AI feedback prototype")
 if "form_data" not in st.session_state:
     st.session_state.form_data = {"title": "", "date": date.today(), "location": ""}
 
-st.subheader("📝 Submission Details")
+st.subheader("Submission Details")
 title = st.text_input(
     "Title",
     placeholder="e.g., Rock fossil",
@@ -94,9 +94,9 @@ def analyze_fossil_quality_pil(pil_img: Image.Image):
         min_var = 0.0
     metrics["min_sharpness"] = round(float(min_var), 2)
     if min_var < 120:  # tuned threshold; raise if you want stricter
-        feedback.append("⚠️ Local blur detected — refocus or steady the camera.")
+        feedback.append("Local blur detected — refocus or steady the camera.")
     else:
-        feedback.append("✅ Sharpness OK")
+        feedback.append("Sharpness OK")
 
     # Background uniformity via KMeans clustering on a small resize
     small = cv2.resize(img, (150, 150))
@@ -121,27 +121,56 @@ class RealTimeTransformer(VideoTransformerBase):
         self.last_metrics = None
         self.last_frame = None
         self._transform_lock = threading.Lock()
+        # Throttle analysis to at most once every N seconds to save CPU/GPU
+        self.last_analysis_time = 0.0
+        self.analysis_interval = 0.5  # seconds; change to 1.0 for once-per-second
+        self.last_feedback = ["No analysis yet"]
+
+        # Background analysis thread control
+        self._stop_event = threading.Event()
+        self._analysis_thread = threading.Thread(target=self._analysis_loop, daemon=True)
+        self._analysis_thread.start()
+
+    def _analysis_loop(self):
+        import time
+        while not self._stop_event.is_set():
+            time.sleep(self.analysis_interval)
+            # grab a copy of the latest frame (BGR numpy) without holding the lock while analyzing
+            with self._transform_lock:
+                frame = None if self.last_frame is None else self.last_frame.copy()
+            if frame is None:
+                continue
+            try:
+                img_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                pil_img = Image.fromarray(img_rgb)
+                feedback, metrics = analyze_fossil_quality_pil(pil_img)
+                # update shared state under lock
+                with self._transform_lock:
+                    self.last_metrics = metrics
+                    self.last_feedback = feedback
+                    self.last_analysis_time = time.time()
+            except Exception:
+                with self._transform_lock:
+                    self.last_feedback = ["Analysis error"]
+                    self.last_metrics = {}
 
     def recv(self, frame: VideoFrame) -> VideoFrame:
         img = frame.to_ndarray(format="bgr24")
         with self._transform_lock:
             self.last_frame = img.copy()
-        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        pil_img = Image.fromarray(img_rgb)
 
-        # Optionally analyze every Nth frame (keep cost reasonable)
-        try:
-            feedback, metrics = analyze_fossil_quality_pil(pil_img)
-            self.last_metrics = metrics
-        except Exception as e:
-            feedback = ["Analysis error"]
-            self.last_metrics = {}
+        # Use last computed metrics/feedback (analysis happens in background thread)
+        with self._transform_lock:
+            feedback = self.last_feedback
+            metrics = self.last_metrics
 
         # Draw overlay: place first 3 feedback items
         y = 30
         for i, f in enumerate(feedback[:3]):
             text = f
-            color = (0, 200, 0) if "✅" in text else (0, 165, 255)
+            # decide color based on positive keywords instead of emoji
+            positive_keywords = ["OK", "No major", "Lighting OK", "Sharpness OK", "Background OK"]
+            color = (0, 200, 0) if any(k in text for k in positive_keywords) else (0, 165, 255)
             cv2.putText(img, text, (10, y), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2, cv2.LINE_AA)
             y += 30
 
@@ -165,7 +194,7 @@ ctx = webrtc_streamer(
     async_processing=True,
 )
 
-if ctx.video_transformer and st.button("📸 Capture Frame", type="primary"):
+if ctx.video_transformer and st.button("Capture Frame", type="primary"):
     with ctx.video_transformer._transform_lock:
         if ctx.video_transformer.last_frame is not None:
             img_bgr = ctx.video_transformer.last_frame.copy()
@@ -176,23 +205,23 @@ if ctx.video_transformer and st.button("📸 Capture Frame", type="primary"):
         else:
             st.warning("No video frame available yet.")
 
-st.markdown("#### Captured Photos and Analysis")
+st.markdown("Captured Photos and Analysis")
 if st.session_state.photos:
     for idx, pil_image in enumerate(st.session_state.photos):
         cols = st.columns([3, 1])
         with cols[0]:
             st.image(pil_image, caption=f"Image {idx+1}", width=220)
             feedback, metrics = analyze_fossil_quality_pil(pil_image)
-            st.markdown("**Quality Feedback:**")
+            st.markdown("Quality Feedback:")
             for f in feedback:
                 st.write(f)
             # Removed metrics printing to hide JSON
             # st.markdown("**Metrics:**")
             # st.json(metrics)
         with cols[1]:
-            if st.button(f"🗑 Remove {idx+1}", key=f"remove_{idx}"):
+            if st.button(f"Remove {idx+1}", key=f"remove_{idx}"):
                 st.session_state.photos.pop(idx)
-                st.experimental_rerun()
+                st.rerun()
 else:
     st.write("No photos captured yet.")
 
@@ -205,9 +234,9 @@ if st.button("Submit"):
     find_date = st.session_state.form_data["date"]
 
     if not title or not location:
-        st.warning("⚠️ Please provide a title and location before submitting.")
+        st.warning("Please provide a title and location before submitting.")
     elif not st.session_state.photos:
-        st.warning("⚠️ Please take at least one image before submitting.")
+        st.warning("Please take at least one image before submitting.")
     else:
         base_dir = "submissions"
         os.makedirs(base_dir, exist_ok=True)
@@ -220,7 +249,7 @@ if st.button("Submit"):
             filepath = os.path.join(save_dir, f"img_{i}.jpg")
             pil_image.save(filepath)
 
-        st.success(f"✅ Submission '{title}' saved successfully in `{save_dir}`")
+        st.success(f"Submission '{title}' saved successfully in `{save_dir}`")
         # Reset all
         st.session_state.photos.clear()
         st.session_state.form_data = {"title": "", "date": date.today(), "location": ""}
