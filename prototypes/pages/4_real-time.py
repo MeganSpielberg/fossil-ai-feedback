@@ -1,256 +1,194 @@
-# main.py
-import streamlit as st
-from streamlit_webrtc import webrtc_streamer, VideoTransformerBase, WebRtcMode
-from av import VideoFrame
+# unified_main.py
 import cv2
 import numpy as np
+import streamlit as st
 from PIL import Image
+from streamlit_webrtc import webrtc_streamer, VideoTransformerBase, WebRtcMode
 from sklearn.cluster import KMeans
 from datetime import date
 import os
 import threading
 
-st.set_page_config(page_title="Real time AI feedback", layout="wide")
-st.title("Real time AI feedback prototype")
+st.set_page_config(page_title="Real-time Fossil Feedback & Scale Checker", layout="wide")
+st.title("Real-time AI Feedback with Scale Detection")
 
-# --- Initialize form state ---
+# ------------------ FORM SECTION ------------------
 if "form_data" not in st.session_state:
     st.session_state.form_data = {"title": "", "date": date.today(), "location": ""}
-
 st.subheader("Submission Details")
-title = st.text_input(
-    "Title",
-    placeholder="e.g., Rock fossil",
-    value=st.session_state.form_data["title"],
-    key="title_input"
-)
-find_date = st.date_input(
-    "Date of Find",
-    value=st.session_state.form_data["date"],
-    key="date_input"
-)
-location = st.text_input(
-    "Location",
-    placeholder="e.g., City, Country or GPS coordinates",
-    value=st.session_state.form_data["location"],
-    key="location_input"
-)
-st.session_state.form_data["title"] = title
-st.session_state.form_data["date"] = find_date
-st.session_state.form_data["location"] = location
-# ---------- Session State ----------
+title = st.text_input("Title", value=st.session_state.form_data["title"], key="title_in")
+find_date = st.date_input("Date of Find", value=st.session_state.form_data["date"], key="date_in")
+location = st.text_input("Location", value=st.session_state.form_data["location"], key="location_in")
+st.session_state.form_data.update({"title": title, "date": find_date, "location": location})
+
 if "photos" not in st.session_state:
-    st.session_state.photos = []  # list of PIL images
-if "form" not in st.session_state:
-    st.session_state.form = {"title": "", "date": date.today(), "location": ""}
+    st.session_state.photos = []
 if "mode" not in st.session_state:
     st.session_state.mode = "Baseline"
 
-# For signaling capture from main thread to transformer callback
 CaptureLock = threading.Lock()
-capture_next_frame = {"flag": False}  # mutable container accessible from both threads
-# Stores captured frames (numpy BGR images) placed by transformer
+capture_next_frame = {"flag": False}
 captured_frames_buffer = []
 
-# ---------- Quality Analysis (robust/local) ----------
+
+# ------------------ QUALITY & SCALE ANALYSIS ------------------
 def analyze_fossil_quality_pil(pil_img: Image.Image):
-    """
-    Returns (feedback_list, metrics_dict).
-    Robust metrics: local sharpness (patch), percent dark/bright pixels, cluster-based background uniformity.
-    """
     img = np.array(pil_img.convert("RGB"))
     gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+    metrics, feedback = {}, []
 
-    metrics = {}
-    feedback = []
-
-    # Lighting: percent of too-dark / too-bright pixels
     dark_pct = float(np.mean(gray < 50))
     bright_pct = float(np.mean(gray > 240))
-    metrics["dark_pct"] = round(dark_pct * 100, 2)
-    metrics["bright_pct"] = round(bright_pct * 100, 2)
-    if dark_pct > 0.15:
-        feedback.append("Significant dark regions — add more even light.")
-    else:
-        feedback.append("Lighting OK")
-    if bright_pct > 0.10:
-        feedback.append("Overexposed regions detected — reduce glare.")
-    else:
-        feedback.append("No major overexposure")
+    metrics["dark_pct"], metrics["bright_pct"] = round(dark_pct * 100, 2), round(bright_pct * 100, 2)
+    feedback.append("Lighting OK" if dark_pct < 0.15 else "Significant dark regions. Add more light.")
+    feedback.append("No major overexposure" if bright_pct < 0.1 else "Overexposed regions detected. Reduce glare.")
 
-    # Sharpness: local Laplacian variance (minimum patch)
     h, w = gray.shape
-    patch = 120  # patch size — tune to your use case
-    min_var = np.inf
-    for y in range(0, h, patch):
-        for x in range(0, w, patch):
-            p = gray[y : y + patch, x : x + patch]
-            if p.size == 0:
-                continue
-            var = cv2.Laplacian(p, cv2.CV_64F).var()
-            if var < min_var:
-                min_var = var
-    if not np.isfinite(min_var):
-        min_var = 0.0
-    metrics["min_sharpness"] = round(float(min_var), 2)
-    if min_var < 120:  # tuned threshold; raise if you want stricter
-        feedback.append("Local blur detected — refocus or steady the camera.")
-    else:
-        feedback.append("Sharpness OK")
+    patch = 120
+    min_var = min(cv2.Laplacian(gray[y:y+patch, x:x+patch], cv2.CV_64F).var()
+                  for y in range(0, h, patch) for x in range(0, w, patch) if gray[y:y+patch, x:x+patch].size)
+    metrics["min_sharpness"] = round(min_var, 2)
+    feedback.append("Sharpness OK" if min_var > 120 else "Local blur detected. Refocus needed.")
 
-    # Background uniformity via KMeans clustering on a small resize
     small = cv2.resize(img, (150, 150))
-    reshaped = small.reshape(-1, 3).astype(np.float32)
-    try:
-        kmeans = KMeans(n_clusters=3, n_init=10, random_state=0).fit(reshaped)
-        counts = np.bincount(kmeans.labels_)
-        dominant_pct = float(counts.max()) / counts.sum()
-    except Exception:
-        dominant_pct = 1.0
+    kmeans = KMeans(n_clusters=3, n_init=10, random_state=0).fit(small.reshape(-1, 3).astype(np.float32))
+    dominant_pct = float(np.bincount(kmeans.labels_).max()) / len(kmeans.labels_)
+    feedback.append("Background OK" if dominant_pct > 0.7 else "Cluttered background. Use clean backdrop.")
     metrics["dominant_bg_pct"] = round(dominant_pct * 100, 2)
-    if dominant_pct < 0.7:
-        feedback.append("Background looks cluttered — use a uniform background.")
-    else:
-        feedback.append("Background OK")
 
+    # Scale check (ruler or coin)
+    has_scale, scale_type = detect_scale_in_image(img)
+    if has_scale:
+        feedback.append(f"{scale_type} detected. Size reference OK.")
+    else:
+        feedback.append("No ruler or coin detected. Please include a scale.")
     return feedback, metrics
 
-# ---------- Video Transformer for real-time feedback ----------
+
+def detect_ruler_like_object(image: np.ndarray) -> bool:
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    edges = cv2.Canny(gray, 50, 150)
+    lines = cv2.HoughLinesP(edges, 1, np.pi / 180, threshold=100, minLineLength=100, maxLineGap=10)
+    if lines is None:
+        return False
+    angles = [np.degrees(np.arctan2(y2 - y1, x2 - x1)) for [[x1, y1, x2, y2]] in lines]
+    hist, _ = np.histogram(angles, bins=18, range=(-90, 90))
+    return hist.max() > 10
+
+
+def detect_coin_like_object(image: np.ndarray) -> bool:
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    blurred = cv2.medianBlur(gray, 7)
+    circles = cv2.HoughCircles(
+        blurred, cv2.HOUGH_GRADIENT, dp=1.2, minDist=40,
+        param1=50, param2=30, minRadius=15, maxRadius=100
+    )
+    return circles is not None
+
+
+def detect_scale_in_image(image: np.ndarray):
+    """Return (True, type) if ruler or coin detected."""
+    ruler_detected = detect_ruler_like_object(image)
+    coin_detected = detect_coin_like_object(image)
+    if ruler_detected:
+        return True, "Ruler or bar scale"
+    if coin_detected:
+        return True, "Coin reference"
+    return False, ""
+
+
+# ------------------ VIDEO TRANSFORMER ------------------
 class RealTimeTransformer(VideoTransformerBase):
     def __init__(self):
-        self.last_metrics = None
-        self.last_frame = None
+        self.last_metrics, self.last_frame = None, None
         self._transform_lock = threading.Lock()
-        # Throttle analysis to at most once every N seconds to save CPU/GPU
-        self.last_analysis_time = 0.0
-        self.analysis_interval = 0.5  # seconds; change to 1.0 for once-per-second
-        self.last_feedback = ["No analysis yet"]
-
-        # Background analysis thread control
+        self.last_feedback = ["Initializing..."]
         self._stop_event = threading.Event()
-        self._analysis_thread = threading.Thread(target=self._analysis_loop, daemon=True)
-        self._analysis_thread.start()
+        threading.Thread(target=self._analysis_loop, daemon=True).start()
 
     def _analysis_loop(self):
         import time
         while not self._stop_event.is_set():
-            time.sleep(self.analysis_interval)
-            # grab a copy of the latest frame (BGR numpy) without holding the lock while analyzing
+            time.sleep(0.7)
             with self._transform_lock:
                 frame = None if self.last_frame is None else self.last_frame.copy()
             if frame is None:
                 continue
-            try:
-                img_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                pil_img = Image.fromarray(img_rgb)
-                feedback, metrics = analyze_fossil_quality_pil(pil_img)
-                # update shared state under lock
-                with self._transform_lock:
-                    self.last_metrics = metrics
-                    self.last_feedback = feedback
-                    self.last_analysis_time = time.time()
-            except Exception:
-                with self._transform_lock:
-                    self.last_feedback = ["Analysis error"]
-                    self.last_metrics = {}
+            img_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            pil_img = Image.fromarray(img_rgb)
+            fb, metrics = analyze_fossil_quality_pil(pil_img)
+            with self._transform_lock:
+                self.last_feedback, self.last_metrics = fb, metrics
 
-    def recv(self, frame: VideoFrame) -> VideoFrame:
+    def recv(self, frame):
         img = frame.to_ndarray(format="bgr24")
         with self._transform_lock:
             self.last_frame = img.copy()
-
-        # Use last computed metrics/feedback (analysis happens in background thread)
-        with self._transform_lock:
-            feedback = self.last_feedback
-            metrics = self.last_metrics
-
-        # Draw overlay: place first 3 feedback items
+            fb = self.last_feedback
         y = 30
-        for i, f in enumerate(feedback[:3]):
-            text = f
-            # decide color based on positive keywords instead of emoji
-            positive_keywords = ["OK", "No major", "Lighting OK", "Sharpness OK", "Background OK"]
-            color = (0, 200, 0) if any(k in text for k in positive_keywords) else (0, 165, 255)
-            cv2.putText(img, text, (10, y), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2, cv2.LINE_AA)
+        for text in fb[:4]:
+            color = (0, 200, 0) if "OK" in text or "detected" in text else (0, 165, 255)
+            cv2.putText(img, text, (10, y), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
             y += 30
+        return frame.from_ndarray(img, format="bgr24")
 
-        # If main thread set capture flag, copy frame into buffer
-        if capture_next_frame["flag"]:
-            with CaptureLock:
-                captured_frames_buffer.append(img.copy())
-                capture_next_frame["flag"] = False
 
-        return VideoFrame.from_ndarray(img, format="bgr24")
-
-# ---------- Streamlit UI Workflow ----------
+# ------------------ STREAMLIT LIVE SECTION ------------------
 st.divider()
-st.markdown("#### Live Webcam Stream with Real-Time Quality Feedback")
+st.markdown("### Live Video with AI Quality & Scale Detection")
 
 ctx = webrtc_streamer(
-    key="fossil-capture",
+    key="fossil-stream",
     mode=WebRtcMode.SENDRECV,
     video_transformer_factory=RealTimeTransformer,
     media_stream_constraints={"video": True, "audio": False},
     async_processing=True,
 )
 
-if ctx.video_transformer and st.button("Capture Frame", type="primary"):
+if ctx.video_transformer and st.button("Capture Frame"):
     with ctx.video_transformer._transform_lock:
         if ctx.video_transformer.last_frame is not None:
-            img_bgr = ctx.video_transformer.last_frame.copy()
-            img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
-            pil_image = Image.fromarray(img_rgb)
-            st.session_state.photos.append(pil_image)
+            rgb = cv2.cvtColor(ctx.video_transformer.last_frame, cv2.COLOR_BGR2RGB)
+            st.session_state.photos.append(Image.fromarray(rgb))
             st.success("Frame captured!")
         else:
-            st.warning("No video frame available yet.")
+            st.warning("No video frame yet.")
 
-st.markdown("Captured Photos and Analysis")
+
+# ------------------ PHOTO COLLECTION ------------------
+st.divider()
 if st.session_state.photos:
-    for idx, pil_image in enumerate(st.session_state.photos):
-        cols = st.columns([3, 1])
-        with cols[0]:
-            st.image(pil_image, caption=f"Image {idx+1}", width=220)
-            feedback, metrics = analyze_fossil_quality_pil(pil_image)
-            st.markdown("Quality Feedback:")
-            for f in feedback:
-                st.write(f)
-            # Removed metrics printing to hide JSON
-            # st.markdown("**Metrics:**")
-            # st.json(metrics)
-        with cols[1]:
-            if st.button(f"Remove {idx+1}", key=f"remove_{idx}"):
-                st.session_state.photos.pop(idx)
+    for i, img in enumerate(st.session_state.photos):
+        c1, c2 = st.columns([3, 1])
+        with c1:
+            st.image(img, caption=f"Image {i+1}", width=220)
+            fb, _ = analyze_fossil_quality_pil(img)
+            st.write("Feedback:")
+            for f in fb:
+                st.write("-", f)
+        with c2:
+            if st.button(f"Remove {i+1}", key=f"rem_{i}"):
+                st.session_state.photos.pop(i)
                 st.rerun()
 else:
     st.write("No photos captured yet.")
 
 
-# --- Submit Section ---
+# ------------------ SUBMIT SECTION ------------------
 st.divider()
 if st.button("Submit"):
     title = st.session_state.form_data["title"].strip()
-    location = st.session_state.form_data["location"].strip()
-    find_date = st.session_state.form_data["date"]
-
-    if not title or not location:
-        st.warning("Please provide a title and location before submitting.")
+    loc = st.session_state.form_data["location"].strip()
+    if not title or not loc:
+        st.warning("Please provide title and location before submitting.")
     elif not st.session_state.photos:
         st.warning("Please take at least one image before submitting.")
     else:
-        base_dir = "submissions"
-        os.makedirs(base_dir, exist_ok=True)
-        folder_name = f"{title.replace(' ', '_')}_{location.replace(' ', '_')}_{find_date}"
-        save_dir = os.path.join(base_dir, folder_name)
-        os.makedirs(save_dir, exist_ok=True)
-
-        # Save all captured images
-        for i, pil_image in enumerate(st.session_state.photos, start=1):
-            filepath = os.path.join(save_dir, f"img_{i}.jpg")
-            pil_image.save(filepath)
-
-        st.success(f"Submission '{title}' saved successfully in `{save_dir}`")
-        # Reset all
+        base = "submissions"
+        os.makedirs(base, exist_ok=True)
+        dirn = os.path.join(base, f"{title.replace(' ', '_')}_{loc}_{find_date}")
+        os.makedirs(dirn, exist_ok=True)
+        for idx, img in enumerate(st.session_state.photos, 1):
+            img.save(os.path.join(dirn, f"img_{idx}.jpg"))
+        st.success(f"Submission saved to {dirn}.")
         st.session_state.photos.clear()
-        st.session_state.form_data = {"title": "", "date": date.today(), "location": ""}
-        st.rerun()
