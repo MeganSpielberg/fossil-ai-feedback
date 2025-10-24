@@ -1,7 +1,5 @@
 import streamlit as st
 
-st.set_page_config(page_title="Fossil Photography Study", layout="wide")
-
 st.title("Fossil Photography Prototype Testing")
 
 st.markdown("""
@@ -31,16 +29,13 @@ This web app consists of **three camera prototypes**. Your goal is to **capture 
 
 ---
 
-### Tips for good fossil photography:
-- Ensure **good lighting** (avoid dark or overexposed areas)  
-- Use a **uniform background**  
-- Keep the fossil **in focus and sharp**  
-- Take **multiple angles or perspectives** if possible
-
----
-
 Please go through the prototypes **in order (1 → 2 → 3)**.  
 At the end of each prototype, make sure to **submit your photos** so your data is recorded correctly.  
 
 Thank you for helping test these prototypes! 🦴
 """)
+
+st.markdown('<div style="height:120px;"></div>', unsafe_allow_html=True) 
+st.markdown('<div class="center-cta">', unsafe_allow_html=True)
+st.page_link("pages/2_baseline.py", label="Start", disabled=False)
+st.markdown('</div>', unsafe_allow_html=True)

@@ -183,9 +183,49 @@ class RealTimeTransformer(VideoTransformerBase):
         return VideoFrame.from_ndarray(img, format="bgr24")
 
 # ---------- Streamlit UI Workflow ----------
+# --- Live Stream Section ---
 st.divider()
 st.markdown("#### Live Webcam Stream with Real-Time Quality Feedback")
 
+# Inject CSS to style the capture button placement
+st.markdown("""
+    <style>
+    /* Center capture button below the video */
+    .capture-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 0.5rem;
+        margin-bottom: 1.5rem;
+        position: relative;
+        z-index: 10;
+    }
+
+    /* Make button larger and thumb-friendly on mobile */
+    .stButton > button.capture-btn {
+        background-color: #0d6efd !important;
+        color: white !important;
+        border-radius: 50px !important;
+        padding: 1rem 2rem !important;
+        font-size: 1.2rem !important;
+        box-shadow: 0px 3px 8px rgba(0, 0, 0, 0.25);
+    }
+
+    @media (max-width: 768px) {
+        .stButton > button.capture-btn {
+            width: 80%;
+            padding: 1rem !important;
+            position: fixed;
+            bottom: 4vh;   /* thumb height */
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 999;
+        }
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# WebRTC video streamer
 ctx = webrtc_streamer(
     key="fossil-capture",
     mode=WebRtcMode.SENDRECV,
@@ -194,7 +234,13 @@ ctx = webrtc_streamer(
     async_processing=True,
 )
 
-if ctx.video_transformer and st.button("Capture Frame", type="primary"):
+# Custom capture button centered on page
+st.markdown('<div class="capture-container">', unsafe_allow_html=True)
+capture_pressed = st.button("📸 Take Photo", type="primary", key="capture_btn", use_container_width=False)
+st.markdown('</div>', unsafe_allow_html=True)
+
+# Handle capture
+if ctx.video_transformer and capture_pressed:
     with ctx.video_transformer._transform_lock:
         if ctx.video_transformer.last_frame is not None:
             img_bgr = ctx.video_transformer.last_frame.copy()
@@ -204,6 +250,7 @@ if ctx.video_transformer and st.button("Capture Frame", type="primary"):
             st.success("Frame captured!")
         else:
             st.warning("No video frame available yet.")
+
 
 st.markdown("Captured Photos and Analysis")
 if st.session_state.photos:

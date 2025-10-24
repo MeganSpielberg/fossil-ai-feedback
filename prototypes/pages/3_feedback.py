@@ -6,30 +6,19 @@ from sklearn.cluster import KMeans
 from datetime import date
 import os
 
-st.set_page_config(page_title="Post-capture feedback", layout="wide")
 st.title("Post-capture feedback prototype")
-st.markdown("""
-<style>
-div[data-testid="stCameraInput"] video {
-    width: 100% !important;
-    height: 80vh !important;  /* taller for vertical phones */
-    object-fit: cover;
-    border-radius: 8px;
-}
-</style>
-""", unsafe_allow_html=True)
-
-st.components.v1.html("""
-<script>
-document.documentElement.requestFullscreen().catch(()=>{});
-</script>
-""")
 
 # --- Session state ---
 if "photos" not in st.session_state:
     st.session_state.photos = []
 if "form_data" not in st.session_state:
     st.session_state.form_data = {"title": "", "date": date.today(), "location": ""}
+if "current_photo" not in st.session_state:
+    st.session_state.current_photo = None
+if "current_metrics" not in st.session_state:
+    st.session_state.current_metrics = None
+if "camera_key" not in st.session_state:
+    st.session_state.camera_key = 0
 
 # --- Fossil quality analysis ---
 def analyze_fossil_quality(image: Image.Image):
@@ -72,14 +61,14 @@ def analyze_fossil_quality(image: Image.Image):
     return feedback, metrics
 
 # --- Submission fields ---
-st.subheader("📝 Submission Details")
+st.subheader("Submission Details")
 title = st.text_input("Title", value=st.session_state.form_data["title"])
 find_date = st.date_input("Date of Find", value=st.session_state.form_data["date"])
 location = st.text_input("Location", value=st.session_state.form_data["location"])
 st.session_state.form_data.update({"title": title, "date": find_date, "location": location})
 
 # --- Camera input ---
-st.subheader("📷 Take Fossil Photos")
+st.subheader("Take Fossil Photos")
 st.markdown("""
 **Instructions:**  
 - Use your phone camera.  
@@ -90,30 +79,48 @@ st.markdown("""
 # Make camera input larger and adaptive
 camera_container = st.container()
 with camera_container:
-    photo = st.camera_input("Capture a photo", key="camera_input")
+    photo = st.camera_input("Capture a photo", key=f"camera_{st.session_state.camera_key}")
 
 if photo:
     image = Image.open(photo)
-    st.image(image, caption="Captured Photo", use_container_width=True)
-
+    st.session_state.current_photo = image
     # Quality feedback
     feedback, metrics = analyze_fossil_quality(image)
-    st.subheader("📊 Image Quality Feedback")
-    for line in feedback:
-        st.write(line)
-    st.caption(f"Metrics: {metrics}")
+    st.session_state.current_metrics = (feedback, metrics)
+    # Increment camera key to clear view after capture
+    st.session_state.camera_key += 1
+    st.rerun()
+
+# Display current photo and metrics if they exist
+if st.session_state.current_photo is not None:
+    st.image(st.session_state.current_photo, caption="Captured Photo", use_container_width=True)
+
+    if st.session_state.current_metrics:
+        feedback, metrics = st.session_state.current_metrics
+        st.subheader("Image Quality Feedback")
+        for line in feedback:
+            st.write(line)
+        st.caption(f"Metrics: {metrics}")
 
     # Keep / discard
     cols = st.columns([1,1])
     if cols[0].button("✅ Keep Photo"):
-        st.session_state.photos.append(image)
+        st.session_state.photos.append(st.session_state.current_photo)
+        st.session_state.current_photo = None
+        st.session_state.current_metrics = None
+        st.session_state.camera_key += 1  # Ensure camera is clear
         st.success("Photo saved!")
+        st.rerun()
     if cols[1].button("🔁 Discard Photo"):
+        st.session_state.current_photo = None
+        st.session_state.current_metrics = None
+        st.session_state.camera_key += 1  # Ensure camera is clear
         st.warning("Photo discarded.")
+        st.rerun()
 
 # --- Display saved photos ---
 if st.session_state.photos:
-    st.subheader("📸 Saved Photos")
+    st.subheader("Saved Photos")
     for idx, img in enumerate(st.session_state.photos):
         st.image(img, caption=f"Image {idx+1}", use_container_width=True)
         if st.button(f"🗑 Remove {idx+1}", key=f"remove_{idx}"):

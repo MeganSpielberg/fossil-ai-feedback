@@ -1,0 +1,8 @@
+[theme]
+primaryColor = "#546E7A"             # slate blue-gray - for interactive elements
+backgroundColor = "#F5F5F0"          # light stone - main background
+secondaryBackgroundColor = "#E6E2DD" # warm gray - for cards/sections
+textColor = "#2C363F"                # dark slate - for text
+
+[server]
+headless = true
