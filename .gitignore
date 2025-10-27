@@ -7,6 +7,7 @@ node_modules/
 # Build output
 build/
 dist/
+prototypes/backend/app*
 
 # Logs
 npm-debug.log*
