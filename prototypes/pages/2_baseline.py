@@ -1,195 +1,154 @@
-from io import BytesIO
 import streamlit as st
 from PIL import Image
+from io import BytesIO
+import base64
 import os
 from datetime import date
-from streamlit_webrtc import webrtc_streamer, VideoTransformerBase, WebRtcMode
-import av
-import cv2
+import tempfile
+from streamlit.components.v1 import html
 
-# Page config removed here to avoid conflicts with top-level config
-
+st.set_page_config(page_title="Baseline Prototype", layout="wide")
 st.title("Baseline Prototype")
 
 st.markdown("""
 **Instructions:**
-- Capture fossil photos using your device camera.
+- Tap **Take Photo** to open the camera.
 - You can remove or retake images before submission.
 - Fill in the metadata fields before submitting.
 """)
 
-# --- Initialize session state ---
+# --- Session state ---
 if "photos" not in st.session_state:
-    st.session_state.photos = []
-if "camera_key" not in st.session_state:
-    st.session_state.camera_key = 0
+    st.session_state.photos = []  # base64 images
+if "photo_files" not in st.session_state:
+    st.session_state.photo_files = []  # temp file paths
 if "form_data" not in st.session_state:
     st.session_state.form_data = {"title": "", "date": date.today(), "location": ""}
+if "show_camera" not in st.session_state:
+    st.session_state.show_camera = False
+if "temp_dir" not in st.session_state:
+    st.session_state.temp_dir = tempfile.mkdtemp(prefix="captures_")
 
-# --- Submission metadata fields ---
+# --- Metadata form ---
 st.subheader("Submission Details")
-title = st.text_input(
-    "Title",
-    placeholder="e.g., Rock fossil",
-    value=st.session_state.form_data["title"],
-    key="title_input"
-)
-find_date = st.date_input(
-    "Date of Find",
-    value=st.session_state.form_data["date"],
-    key="date_input"
-)
-location = st.text_input(
-    "Location",
-    placeholder="e.g., City, Country or GPS coordinates",
-    value=st.session_state.form_data["location"],
-    key="location_input"
-)
-st.session_state.form_data["title"] = title
-st.session_state.form_data["date"] = find_date
-st.session_state.form_data["location"] = location
+title = st.text_input("Title", value=st.session_state.form_data["title"])
+find_date = st.date_input("Date of Find", value=st.session_state.form_data["date"])
+location = st.text_input("Location", value=st.session_state.form_data["location"])
+st.session_state.form_data.update({"title": title, "date": find_date, "location": location})
 
 st.markdown("---")
 
-class VideoTransformer(VideoTransformerBase):
-    def __init__(self):
-        self.frame = None
+# --- Take photo button ---
+if not st.session_state.show_camera:
+    if st.button("📸 Take Image"):
+        st.session_state.show_camera = True
 
-    def recv(self, frame):
-        img = frame.to_ndarray(format="bgr24")
-        self.frame = img  # save latest frame
-        return av.VideoFrame.from_ndarray(img, format="bgr24")
+# --- Hidden textarea to get base64 image from JS ---
+captured_base64 = st.text_area("Captured Image Data", value="", height=1, key="img_data")
 
-st.markdown("---")
+# --- Process captured image ---
+if captured_base64:
+    st.session_state.photos.append(captured_base64)
 
-# Container for camera and capture button
-camera_container = st.container()
-with camera_container:
-    st.subheader("Camera")
-    
-    st.markdown("""
+    # Save temp file
+    img_bytes = base64.b64decode(captured_base64.split(",",1)[1])
+    img = Image.open(BytesIO(img_bytes))
+    idx = len(st.session_state.photos)
+    temp_path = os.path.join(st.session_state.temp_dir, f"photo_{idx}.jpg")
+    img.save(temp_path)
+    st.session_state.photo_files.append(temp_path)
+
+    st.session_state.show_camera = False
+    st.rerun()
+
+# --- Custom JS camera ---
+if st.session_state.show_camera:
+    html("""
     <style>
-    .camera-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 1rem;
-        width: 100%;
-    }
-
-    /* Camera stream always scales nicely */
-    .camera-container iframe {
-        width: 100% !important;
-        border-radius: 8px;
-    }
-
-    /* Capture button container */
-    .capture-button {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        width: 100%;
-    }
-
-    /* Capture button style */
-    .capture-button button {
-        min-height: 70px !important;
-        font-size: 24px !important;
-        width: 100% !important;
-    }
-
-    /* Desktop / Tablet: put button to the right */
-    @media (min-width: 768px) {
-        .camera-container {
-            flex-direction: row;
-            align-items: center;
-            justify-content: center;
-            gap: 1rem;
-        }
-        .capture-button {
-            width: auto;
-            height: 100%;
-            padding-left: 1rem;
-        }
-        .capture-button button {
-            width: 80px !important;
-            height: 160px !important;
-        }
-    }
-
-    /* Landscape mobile (important tweak) */
-    @media (max-width: 768px) and (orientation: landscape) {
-        .camera-container {
-            flex-direction: column-reverse;
-        }
-    }
+    #camera-container {position:relative; width:100%; height:400px; background:black; border-radius:10px;}
+    video {width:100%; height:100%; object-fit:cover; border-radius:10px;}
+    #capture {position:absolute; bottom:20px; left:50%; transform:translateX(-50%);
+               font-size:32px; padding:15px 25px; border-radius:50%; background:#fff; cursor:pointer;
+               box-shadow:0 4px 10px rgba(0,0,0,0.4);}
     </style>
-    """, unsafe_allow_html=True)
+    <div id="camera-container">
+        <video id="camera" autoplay playsinline></video>
+        <button id="capture">📷</button>
+        <canvas id="snapshot" style="display:none;"></canvas>
+    </div>
 
-    st.markdown('<div class="camera-container">', unsafe_allow_html=True)
-    webrtc_ctx = webrtc_streamer(
-        key="fossil-camera",
-        mode=WebRtcMode.SENDRECV,
-        video_transformer_factory=VideoTransformer,
-        media_stream_constraints={"video": True, "audio": False},
-        async_processing=True,
-    )
-    st.markdown('<div class="capture-button">', unsafe_allow_html=True)
-    if st.button("📸 Capture", use_container_width=True):
-        if webrtc_ctx.video_transformer and webrtc_ctx.video_transformer.frame is not None:
-            img = webrtc_ctx.video_transformer.frame
-            pil_img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-            buf = BytesIO()
-            pil_img.save(buf, format="JPEG")
-            st.session_state.photos.append(buf.getvalue())
-            st.success("Image captured!")
-            st.rerun()
-    st.markdown('</div></div>', unsafe_allow_html=True)
+    <script>
+    const video = document.getElementById('camera');
+    const canvas = document.getElementById('snapshot');
+    const textarea = window.parent.document.getElementById('img_data');
 
+    navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}, audio:false})
+        .then(stream => video.srcObject = stream)
+        .catch(err => alert("Camera error: "+err));
 
-    # Quick actions below camera
-    st.subheader("Quick Actions")
-    if st.button("Clear photos"):
-        st.session_state.photos.clear()
-        st.rerun()
+    document.getElementById('capture').onclick = () => {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video,0,0);
 
-# --- Display Captured Images full-width for readability ---
+        canvas.toBlob(blob => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                textarea.value = reader.result;  // write base64 to hidden textarea
+            };
+            reader.readAsDataURL(blob);
+        }, 'image/jpeg', 0.9);
+
+        if(video.srcObject) video.srcObject.getTracks().forEach(t=>t.stop());
+    };
+    </script>
+    """, height=450)
+
+st.markdown("---")
+
+# --- Display captured images ---
 if st.session_state.photos:
     st.subheader("Captured Images")
-    for idx, img_file in enumerate(st.session_state.photos):
-        cols = st.columns([4, 1])
-        with cols[0]:
-            img = Image.open(img_file)
-            st.image(img, caption=f"Image {idx+1}", use_container_width=True)
-        with cols[1]:
-            if st.button(f"Remove {idx+1}", key=f"remove_{idx}"):
-                st.session_state.photos.pop(idx)
-                st.rerun()
+    for idx, img_data in enumerate(st.session_state.photos):
+        cols = st.columns([4,1])
+        try:
+            img = Image.open(BytesIO(base64.b64decode(img_data.split(",",1)[1])))
+            with cols[0]:
+                st.image(img, caption=f"Image {idx+1}", use_container_width=True)
+            with cols[1]:
+                if st.button(f"Remove {idx+1}", key=f"remove_{idx}"):
+                    st.session_state.photos.pop(idx)
+                    # remove temp file
+                    if idx < len(st.session_state.photo_files):
+                        try:
+                            os.remove(st.session_state.photo_files[idx])
+                            st.session_state.photo_files.pop(idx)
+                        except:
+                            pass
+                    st.rerun()
+        except Exception as e:
+            st.error(f"Error displaying image {idx+1}: {str(e)}")
+else:
+    st.info("No photos yet. Tap **Take Photo** to capture one.")
 
-# --- Submit Section ---
 st.divider()
-if st.button("Submit"):
-    title = st.session_state.form_data["title"].strip()
-    location = st.session_state.form_data["location"].strip()
-    find_date = st.session_state.form_data["date"]
 
-    if not title or not location:
+# --- Submit ---
+if st.button("Submit"):
+    title_clean = st.session_state.form_data["title"].strip()
+    location_clean = st.session_state.form_data["location"].strip()
+    find_date_val = st.session_state.form_data["date"]
+
+    if not title_clean or not location_clean:
         st.warning("Please provide a title and location before submitting.")
     elif not st.session_state.photos:
-        st.warning("Please take at least one image before submitting.")
+        st.warning("Please capture at least one image before submitting.")
     else:
-        base_dir = "submissions"
-        os.makedirs(base_dir, exist_ok=True)
-        folder_name = f"{title.replace(' ', '_')}_{location.replace(' ', '_')}_{find_date}"
-        save_dir = os.path.join(base_dir, folder_name)
-        os.makedirs(save_dir, exist_ok=True)
-        for i, img_file in enumerate(st.session_state.photos, start=1):
-            img = Image.open(img_file)
-            filename = f"img_{i}.jpg"
-            filepath = os.path.join(save_dir, filename)
-            img.save(filepath)
-        st.success(f"Submission '{title}' saved successfully in `{save_dir}`")
+        folder = f"submissions/{title_clean.replace(' ', '_')}_{find_date_val}"
+        os.makedirs(folder, exist_ok=True)
+        for i, temp_file in enumerate(st.session_state.photo_files, start=1):
+            img = Image.open(temp_file)
+            img.save(f"{folder}/photo_{i}.jpg")
+        st.success(f"✅ Submission saved in `{folder}`!")
         st.session_state.photos.clear()
-        st.session_state.camera_key += 1
-        st.session_state.form_data = {"title": "", "date": date.today(), "location": ""}
-        st.rerun()
+        st.session_state.photo_files.clear()

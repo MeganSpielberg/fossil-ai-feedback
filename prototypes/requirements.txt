@@ -1,0 +1,23 @@
+# Core app
+streamlit>=1.18
+streamlit-webrtc>=0.45.0
+
+# Image / data processing
+numpy>=1.23
+pandas>=1.5
+Pillow>=9.0
+opencv-python>=4.7
+scikit-image>=0.20
+PyWavelets>=1.4
+
+# ML / metrics
+scikit-learn>=1.1
+torch>=2.0
+torchvision>=0.15
+pyiqa>=0.5
+
+# Plotting / utilities
+matplotlib>=3.5
+seaborn>=0.12
+requests>=2.28
+tqdm>=4.65
