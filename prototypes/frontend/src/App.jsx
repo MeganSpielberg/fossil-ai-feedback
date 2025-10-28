@@ -1,50 +1,100 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Camera, Home, ImageIcon, ChevronLeft } from 'lucide-react';
+import { Camera, Home, ImageIcon, ChevronLeft, Save } from 'lucide-react';
 
 const API_URL = 'http://localhost:8080';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('home');
-  const [images, setImages] = useState([]);
+  const [submissionDetails, setSubmissionDetails] = useState({
+    title: '',
+    location: ''
+  });
+  const [currentSubmissionId, setCurrentSubmissionId] = useState(null);
+  const [completedPrototypes, setCompletedPrototypes] = useState([]);
 
-  useEffect(() => {
-    fetchImages();
-  }, []);
-
-  const fetchImages = async () => {
-    try {
-      const response = await fetch(`${API_URL}/api/images`);
-      const data = await response.json();
-      setImages(data.images || []);
-    } catch (error) {
-      console.error('Error fetching images:', error);
+  const startNewSubmission = (prototypeNum) => {
+    if (completedPrototypes.includes(prototypeNum)) {
+      alert(`Prototype ${prototypeNum} has already been completed for this submission`);
+      return;
     }
+
+    if (!submissionDetails.title.trim() || !submissionDetails.location.trim()) {
+      alert('Please enter both Title/Name and Location before starting');
+      return;
+    }
+    
+    if (!currentSubmissionId) {
+      const submissionId = `${Date.now()}_${submissionDetails.title.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      setCurrentSubmissionId(submissionId);
+    }
+    
+    setCurrentPage(`prototype${prototypeNum}`);
+  };
+
+  const markPrototypeComplete = (prototypeNum) => {
+    console.log('Marking prototype complete:', prototypeNum);
+    console.log('Current completed:', completedPrototypes);
+    const newCompleted = [...completedPrototypes, prototypeNum];
+    console.log('New completed:', newCompleted);
+    setCompletedPrototypes(newCompleted);
   };
 
   const renderPage = () => {
     switch (currentPage) {
       case 'home':
-        return <HomePage setCurrentPage={setCurrentPage} images={images} />;
+        return (
+          <HomePage 
+            submissionDetails={submissionDetails}
+            setSubmissionDetails={setSubmissionDetails}
+            startNewSubmission={startNewSubmission}
+            completedPrototypes={completedPrototypes}
+          />
+        );
       case 'prototype1':
-        return <PrototypePage 
-          title="Prototype 1" 
-          instructions="Take a photo of the object from the front view. Ensure good lighting and center the object in frame."
-          setCurrentPage={setCurrentPage}
-        />;
+        return (
+          <PrototypePage 
+            title="Prototype 1" 
+            prototypeNum={1}
+            instructions="Take a photo of the object from the front view. Ensure good lighting and center the object in frame."
+            setCurrentPage={setCurrentPage}
+            submissionId={currentSubmissionId}
+            submissionDetails={submissionDetails}
+            markPrototypeComplete={markPrototypeComplete}
+          />
+        );
       case 'prototype2':
-        return <PrototypePage 
-          title="Prototype 2" 
-          instructions="Capture a close-up shot. Focus on details and maintain a stable position while taking the photo."
-          setCurrentPage={setCurrentPage}
-        />;
+        return (
+          <PrototypePage 
+            title="Prototype 2" 
+            prototypeNum={2}
+            instructions="Capture a close-up shot. Focus on details and maintain a stable position while taking the photo."
+            setCurrentPage={setCurrentPage}
+            submissionId={currentSubmissionId}
+            submissionDetails={submissionDetails}
+            markPrototypeComplete={markPrototypeComplete}
+          />
+        );
       case 'prototype3':
-        return <PrototypePage 
-          title="Prototype 3" 
-          instructions="Take a wide-angle shot including the surrounding context. Step back to capture the full scene."
-          setCurrentPage={setCurrentPage}
-        />;
+        return (
+          <PrototypePage 
+            title="Prototype 3" 
+            prototypeNum={3}
+            instructions="Take a wide-angle shot including the surrounding context. Step back to capture the full scene."
+            setCurrentPage={setCurrentPage}
+            submissionId={currentSubmissionId}
+            submissionDetails={submissionDetails}
+            markPrototypeComplete={markPrototypeComplete}
+          />
+        );
       default:
-        return <HomePage setCurrentPage={setCurrentPage} images={images} />;
+        return (
+          <HomePage 
+            submissionDetails={submissionDetails}
+            setSubmissionDetails={setSubmissionDetails}
+            startNewSubmission={startNewSubmission}
+            completedPrototypes={completedPrototypes}
+          />
+        );
     }
   };
 
@@ -55,7 +105,7 @@ function App() {
   );
 }
 
-function HomePage({ setCurrentPage, images }) {
+function HomePage({ submissionDetails, setSubmissionDetails, startNewSubmission, completedPrototypes }) {
   return (
     <div className="home-page">
       <div className="home-card">
@@ -64,70 +114,86 @@ function HomePage({ setCurrentPage, images }) {
           <h1>Camera Prototype App</h1>
         </div>
         <p className="home-description">
-          Select a prototype to start capturing images. Each prototype has specific instructions for optimal results.
+          Enter submission details and select a prototype to start capturing images.
         </p>
+
+        <div className="submission-form">
+          <h2>Submission Details</h2>
+          <div className="form-group">
+            <label htmlFor="title">Title/Name of Fossil Find</label>
+            <input
+              id="title"
+              type="text"
+              placeholder="e.g., Trilobite Sample A"
+              value={submissionDetails.title}
+              onChange={(e) => setSubmissionDetails({...submissionDetails, title: e.target.value})}
+              className="form-input"
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="location">Location</label>
+            <input
+              id="location"
+              type="text"
+              placeholder="e.g., Site 5, Grid B3"
+              value={submissionDetails.location}
+              onChange={(e) => setSubmissionDetails({...submissionDetails, location: e.target.value})}
+              className="form-input"
+            />
+          </div>
+        </div>
 
         <div className="prototype-grid">
           <PrototypeCard
             number={1}
             title="Front View"
             description="Standard front-facing captures"
-            onClick={() => setCurrentPage('prototype1')}
+            onClick={() => startNewSubmission(1)}
+            isCompleted={completedPrototypes.includes(1)}
           />
           <PrototypeCard
             number={2}
             title="Close-Up"
             description="Detailed close-up shots"
-            onClick={() => setCurrentPage('prototype2')}
+            onClick={() => startNewSubmission(2)}
+            isCompleted={completedPrototypes.includes(2)}
           />
           <PrototypeCard
             number={3}
             title="Wide Angle"
             description="Contextual wide shots"
-            onClick={() => setCurrentPage('prototype3')}
+            onClick={() => startNewSubmission(3)}
+            isCompleted={completedPrototypes.includes(3)}
           />
-        </div>
-
-        <div className="saved-images-section">
-          <div className="saved-images-header">
-            <ImageIcon className="section-icon" />
-            <h2>Saved Images</h2>
-          </div>
-          {images.length > 0 ? (
-            <div className="images-grid">
-              {images.map((img, idx) => (
-                <div key={idx} className="image-item">
-                  <ImageIcon className="image-placeholder-icon" />
-                  <p className="image-name">{img}</p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="no-images">No images saved yet</p>
-          )}
         </div>
       </div>
     </div>
   );
 }
 
-function PrototypeCard({ number, title, description, onClick }) {
+function PrototypeCard({ number, title, description, onClick, isCompleted }) {
   return (
-    <button onClick={onClick} className="prototype-card">
+    <button 
+      onClick={onClick} 
+      className={`prototype-card ${isCompleted ? 'completed' : ''}`}
+      disabled={isCompleted}
+    >
       <div className="prototype-card-icon">
         <Camera />
       </div>
       <h3>Prototype {number}</h3>
       <p className="prototype-card-title">{title}</p>
       <p className="prototype-card-desc">{description}</p>
+      {isCompleted && <p className="completion-badge">✓ Completed</p>}
     </button>
   );
 }
 
-function PrototypePage({ title, instructions, setCurrentPage }) {
+function PrototypePage({ title, prototypeNum, instructions, setCurrentPage, submissionId, submissionDetails, markPrototypeComplete }) {
   const [stream, setStream] = useState(null);
   const [capturedImages, setCapturedImages] = useState([]);
   const [isCameraActive, setIsCameraActive] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
@@ -144,19 +210,14 @@ function PrototypePage({ title, instructions, setCurrentPage }) {
       setIsCameraActive(true);
       setStream(mediaStream);
       
-      // Use setTimeout to ensure the video element is rendered
       setTimeout(() => {
         if (videoRef.current) {
           videoRef.current.srcObject = mediaStream;
           videoRef.current.play().then(() => {
             console.log('Camera started successfully');
-            console.log('Stream:', mediaStream);
-            console.log('Video element:', videoRef.current);
           }).catch(err => {
             console.error('Error playing video:', err);
           });
-        } else {
-          console.error('Video ref is null');
         }
       }, 100);
     } catch (error) {
@@ -182,39 +243,61 @@ function PrototypePage({ title, instructions, setCurrentPage }) {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(video, 0, 0);
       
-      const imageData = canvas.toDataURL('image/jpeg');
+      const imageData = canvas.toDataURL('image/jpeg', 0.9);
       const newImage = {
         id: Date.now(),
         data: imageData,
         timestamp: new Date().toLocaleString()
       };
       setCapturedImages([...capturedImages, newImage]);
-      
-      sendImageToBackend(imageData);
-    }
-  };
-
-  const sendImageToBackend = async (imageData) => {
-    try {
-      const response = await fetch(imageData);
-      const blob = await response.blob();
-      
-      const formData = new FormData();
-      formData.append('image', blob, `image_${Date.now()}.jpg`);
-      
-      await fetch(`${API_URL}/api/upload`, {
-        method: 'POST',
-        body: formData
-      });
-      
-      console.log('Image sent to backend successfully');
-    } catch (error) {
-      console.error('Error sending image to backend:', error);
     }
   };
 
   const deleteImage = (id) => {
     setCapturedImages(capturedImages.filter(img => img.id !== id));
+  };
+
+  const endTesting = async () => {
+    if (capturedImages.length === 0) {
+      alert('Please capture at least one image before ending the test');
+      return;
+    }
+
+    setIsSaving(true);
+    
+    try {
+      const formData = new FormData();
+      formData.append('submission_id', submissionId);
+      formData.append('title', submissionDetails.title);
+      formData.append('location', submissionDetails.location);
+      formData.append('prototype', `p${prototypeNum}`);
+      
+      for (let i = 0; i < capturedImages.length; i++) {
+        const response = await fetch(capturedImages[i].data);
+        const blob = await response.blob();
+        formData.append('images', blob, `image_${i}.jpg`);
+      }
+      
+      const uploadResponse = await fetch(`${API_URL}/api/submit`, {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (uploadResponse.ok) {
+        alert(`Successfully saved ${capturedImages.length} images!`);
+        markPrototypeComplete(prototypeNum);
+        stopCamera();
+        setCurrentPage('home');
+      } else {
+        const error = await uploadResponse.json();
+        alert('Error saving images: ' + (error.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error saving images:', error);
+      alert('Error saving images: ' + error.message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   useEffect(() => {
@@ -227,12 +310,34 @@ function PrototypePage({ title, instructions, setCurrentPage }) {
     <div className="prototype-page">
       <div className="prototype-container">
         <div className="prototype-header">
-          <button onClick={() => { stopCamera(); setCurrentPage('home'); }} className="back-button">
+          <button
+            onClick={() => {
+              if (capturedImages.length > 0) {
+                if (confirm('You have unsaved images. Are you sure you want to go back?')) {
+                  stopCamera();
+                  setCurrentPage('home');
+                }
+              } else {
+                stopCamera();
+                setCurrentPage('home');
+              }
+            }}
+            className="back-button"
+          >
             <ChevronLeft />
             <span>Back to Home</span>
           </button>
           <h1>{title}</h1>
           <div style={{ width: '132px' }}></div>
+        </div>
+
+        <div className="submission-info-box">
+          <div>
+            <strong>Title:</strong> {submissionDetails.title}
+          </div>
+          <div>
+            <strong>Location:</strong> {submissionDetails.location}
+          </div>
         </div>
 
         <div className="instructions-box">
@@ -282,6 +387,17 @@ function PrototypePage({ title, instructions, setCurrentPage }) {
                 </>
               )}
             </div>
+
+            {capturedImages.length > 0 && (
+              <button 
+                onClick={endTesting} 
+                className="btn-end-testing"
+                disabled={isSaving}
+              >
+                <Save />
+                <span>{isSaving ? 'Saving...' : `End Testing & Save ${capturedImages.length} Images`}</span>
+              </button>
+            )}
           </div>
 
           <div className="sidebar">
