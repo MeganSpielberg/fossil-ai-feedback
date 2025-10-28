@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Camera, Home, ImageIcon, ChevronLeft, Save } from 'lucide-react';
+import { Camera, Home, ImageIcon, ChevronLeft, Save, MapPin, FileText, Check } from 'lucide-react';
 
 const API_URL = 'http://localhost:8080';
 
@@ -53,9 +53,9 @@ function App() {
       case 'prototype1':
         return (
           <PrototypePage 
-            title="Prototype 1" 
+            title="Front View" 
             prototypeNum={1}
-            instructions="Take a photo of the object from the front view. Ensure good lighting and center the object in frame."
+            instructions="Position the fossil specimen flat and centered. Ensure even lighting across the entire surface. Take multiple angles if needed."
             setCurrentPage={setCurrentPage}
             submissionId={currentSubmissionId}
             submissionDetails={submissionDetails}
@@ -65,9 +65,9 @@ function App() {
       case 'prototype2':
         return (
           <PrototypePage 
-            title="Prototype 2" 
+            title="Detail Shot" 
             prototypeNum={2}
-            instructions="Capture a close-up shot. Focus on details and maintain a stable position while taking the photo."
+            instructions="Focus on distinctive features and textures. Get as close as possible while maintaining sharp focus. Document unique characteristics."
             setCurrentPage={setCurrentPage}
             submissionId={currentSubmissionId}
             submissionDetails={submissionDetails}
@@ -77,9 +77,9 @@ function App() {
       case 'prototype3':
         return (
           <PrototypePage 
-            title="Prototype 3" 
+            title="Context View" 
             prototypeNum={3}
-            instructions="Take a wide-angle shot including the surrounding context. Step back to capture the full scene."
+            instructions="Include surrounding area and scale reference. Show the specimen in its discovery context. Capture the broader field site."
             setCurrentPage={setCurrentPage}
             submissionId={currentSubmissionId}
             submissionDetails={submissionDetails}
@@ -108,83 +108,93 @@ function App() {
 function HomePage({ submissionDetails, setSubmissionDetails, startNewSubmission, completedPrototypes }) {
   return (
     <div className="home-page">
-      <div className="home-card">
-        <div className="home-header">
-          <Home className="home-icon" />
-          <h1>Camera Prototype App</h1>
-        </div>
-        <p className="home-description">
-          Enter submission details and select a prototype to start capturing images.
-        </p>
+      <div className="home-header-section">
+        <h1 className="app-title">Field Documentation</h1>
+        <p className="app-subtitle">Fossil Discovery Protocol</p>
+      </div>
 
-        <div className="submission-form">
-          <h2>Submission Details</h2>
-          <div className="form-group">
-            <label htmlFor="title">Title/Name of Fossil Find</label>
+      <div className="home-content">
+        <div className="details-card">
+          <h2 className="section-title">Specimen Information</h2>
+          
+          <div className="input-group">
+            <label htmlFor="title" className="input-label">
+              <FileText className="label-icon" />
+              <span>Specimen Name</span>
+            </label>
             <input
               id="title"
               type="text"
-              placeholder="e.g., Trilobite Sample A"
+              placeholder="Enter specimen identifier"
               value={submissionDetails.title}
               onChange={(e) => setSubmissionDetails({...submissionDetails, title: e.target.value})}
-              className="form-input"
+              className="text-input"
             />
           </div>
-          <div className="form-group">
-            <label htmlFor="location">Location</label>
+
+          <div className="input-group">
+            <label htmlFor="location" className="input-label">
+              <MapPin className="label-icon" />
+              <span>Discovery Location</span>
+            </label>
             <input
               id="location"
               type="text"
-              placeholder="e.g., Site 5, Grid B3"
+              placeholder="Grid coordinates or site name"
               value={submissionDetails.location}
               onChange={(e) => setSubmissionDetails({...submissionDetails, location: e.target.value})}
-              className="form-input"
+              className="text-input"
             />
           </div>
         </div>
 
-        <div className="prototype-grid">
-          <PrototypeCard
-            number={1}
-            title="Front View"
-            description="Standard front-facing captures"
-            onClick={() => startNewSubmission(1)}
-            isCompleted={completedPrototypes.includes(1)}
-          />
-          <PrototypeCard
-            number={2}
-            title="Close-Up"
-            description="Detailed close-up shots"
-            onClick={() => startNewSubmission(2)}
-            isCompleted={completedPrototypes.includes(2)}
-          />
-          <PrototypeCard
-            number={3}
-            title="Wide Angle"
-            description="Contextual wide shots"
-            onClick={() => startNewSubmission(3)}
-            isCompleted={completedPrototypes.includes(3)}
-          />
+        <div className="protocol-section">
+          <h2 className="section-title">Documentation Protocol</h2>
+          <div className="protocol-grid">
+            <ProtocolCard
+              number={1}
+              title="Front View"
+              description="Standard specimen documentation"
+              onClick={() => startNewSubmission(1)}
+              isCompleted={completedPrototypes.includes(1)}
+            />
+            <ProtocolCard
+              number={2}
+              title="Detail Shot"
+              description="Close-up feature capture"
+              onClick={() => startNewSubmission(2)}
+              isCompleted={completedPrototypes.includes(2)}
+            />
+            <ProtocolCard
+              number={3}
+              title="Context View"
+              description="Field site documentation"
+              onClick={() => startNewSubmission(3)}
+              isCompleted={completedPrototypes.includes(3)}
+            />
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function PrototypeCard({ number, title, description, onClick, isCompleted }) {
+function ProtocolCard({ number, title, description, onClick, isCompleted }) {
   return (
     <button 
       onClick={onClick} 
-      className={`prototype-card ${isCompleted ? 'completed' : ''}`}
+      className={`protocol-card ${isCompleted ? 'completed' : ''}`}
       disabled={isCompleted}
     >
-      <div className="prototype-card-icon">
-        <Camera />
-      </div>
-      <h3>Prototype {number}</h3>
-      <p className="prototype-card-title">{title}</p>
-      <p className="prototype-card-desc">{description}</p>
-      {isCompleted && <p className="completion-badge">✓ Completed</p>}
+      {isCompleted && (
+        <div className="completion-indicator">
+          <Check className="check-icon" />
+        </div>
+      )}
+      <div className="protocol-number">{number}</div>
+      <h3 className="protocol-title">{title}</h3>
+      <p className="protocol-desc">{description}</p>
+      {isCompleted && <span className="completed-text">Completed</span>}
     </button>
   );
 }
@@ -200,24 +210,18 @@ function PrototypePage({ title, prototypeNum, instructions, setCurrentPage, subm
   const startCamera = async () => {
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { 
+        video: {
           facingMode: 'environment',
           width: { ideal: 1920 },
           height: { ideal: 1080 }
         }
       });
-      
       setIsCameraActive(true);
       setStream(mediaStream);
-      
       setTimeout(() => {
         if (videoRef.current) {
           videoRef.current.srcObject = mediaStream;
-          videoRef.current.play().then(() => {
-            console.log('Camera started successfully');
-          }).catch(err => {
-            console.error('Error playing video:', err);
-          });
+          videoRef.current.play().catch(err => console.error('Video play error:', err));
         }
       }, 100);
     } catch (error) {
@@ -234,23 +238,48 @@ function PrototypePage({ title, prototypeNum, instructions, setCurrentPage, subm
     }
   };
 
-  const captureImage = () => {
-    if (videoRef.current && canvasRef.current) {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0);
-      
-      const imageData = canvas.toDataURL('image/jpeg', 0.9);
-      const newImage = {
-        id: Date.now(),
-        data: imageData,
-        timestamp: new Date().toLocaleString()
-      };
-      setCapturedImages([...capturedImages, newImage]);
+  const analyzeImage = async (imageData) => {
+    const response = await fetch(`${API_URL}/api/analyze-image`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: imageData })
+    });
+    if (!response.ok) throw new Error('Failed to analyze image');
+    return await response.json();
+  };
+
+  const captureImage = async () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0);
+    const imageData = canvas.toDataURL('image/jpeg', 0.9);
+
+    let feedback = null;
+    let metrics = null;
+
+    if (prototypeNum === 2) {
+      try {
+        const analysisResult = await analyzeImage(imageData);
+        feedback = analysisResult.feedback;
+        metrics = analysisResult.metrics;
+      } catch (error) {
+        console.error('Error analyzing image:', error);
+        feedback = [{ type: 'warning', message: 'Could not analyze image' }];
+      }
     }
+
+    const newImage = {
+      id: Date.now(),
+      data: imageData,
+      timestamp: new Date().toLocaleString(),
+      feedback,
+      metrics
+    };
+    setCapturedImages([...capturedImages, newImage]);
   };
 
   const deleteImage = (id) => {
@@ -264,25 +293,20 @@ function PrototypePage({ title, prototypeNum, instructions, setCurrentPage, subm
     }
 
     setIsSaving(true);
-    
     try {
       const formData = new FormData();
       formData.append('submission_id', submissionId);
       formData.append('title', submissionDetails.title);
       formData.append('location', submissionDetails.location);
       formData.append('prototype', `p${prototypeNum}`);
-      
+
       for (let i = 0; i < capturedImages.length; i++) {
         const response = await fetch(capturedImages[i].data);
         const blob = await response.blob();
         formData.append('images', blob, `image_${i}.jpg`);
       }
-      
-      const uploadResponse = await fetch(`${API_URL}/api/submit`, {
-        method: 'POST',
-        body: formData
-      });
-      
+
+      const uploadResponse = await fetch(`${API_URL}/api/submit`, { method: 'POST', body: formData });
       if (uploadResponse.ok) {
         alert(`Successfully saved ${capturedImages.length} images!`);
         markPrototypeComplete(prototypeNum);
@@ -300,133 +324,142 @@ function PrototypePage({ title, prototypeNum, instructions, setCurrentPage, subm
     }
   };
 
-  useEffect(() => {
-    return () => {
-      stopCamera();
-    };
-  }, []);
+  useEffect(() => () => stopCamera(), []);
+
+  const latestImage = capturedImages[capturedImages.length - 1];
 
   return (
-    <div className="prototype-page">
-      <div className="prototype-container">
-        <div className="prototype-header">
-          <button
-            onClick={() => {
-              if (capturedImages.length > 0) {
-                if (confirm('You have unsaved images. Are you sure you want to go back?')) {
-                  stopCamera();
-                  setCurrentPage('home');
-                }
-              } else {
-                stopCamera();
-                setCurrentPage('home');
-              }
-            }}
-            className="back-button"
-          >
-            <ChevronLeft />
-            <span>Back to Home</span>
-          </button>
-          <h1>{title}</h1>
-          <div style={{ width: '132px' }}></div>
+    <div className="capture-page">
+      {/* HEADER */}
+      <div className="capture-header">
+        <button
+          onClick={() => {
+            if (capturedImages.length > 0 && !confirm('Unsaved images will be lost. Go back?')) return;
+            stopCamera();
+            setCurrentPage('home');
+          }}
+          className="back-btn"
+        >
+          <ChevronLeft />
+        </button>
+        <div className="header-info">
+          <h1 className="capture-title">{title}</h1>
+          <p className="capture-subtitle">Protocol {prototypeNum}</p>
         </div>
-
-        <div className="submission-info-box">
-          <div>
-            <strong>Title:</strong> {submissionDetails.title}
-          </div>
-          <div>
-            <strong>Location:</strong> {submissionDetails.location}
-          </div>
-        </div>
-
-        <div className="instructions-box">
-          <h2>
-            <span className="instruction-dot"></span>
-            Instructions
-          </h2>
-          <p>{instructions}</p>
-        </div>
-
-        <div className="camera-layout">
-          <div className="camera-section">
-            <div className="camera-view">
-              {isCameraActive ? (
-                <video 
-                  ref={videoRef} 
-                  autoPlay 
-                  playsInline 
-                  muted
-                  className="video-element" 
-                />
-              ) : (
-                <div className="camera-placeholder">
-                  <Camera className="placeholder-icon" />
-                  <p>Camera not active</p>
-                </div>
-              )}
-            </div>
-
-            <canvas ref={canvasRef} style={{ display: 'none' }} />
-
-            <div className="camera-controls">
-              {!isCameraActive ? (
-                <button onClick={startCamera} className="btn-start">
-                  <Camera />
-                  <span>Start Camera</span>
-                </button>
-              ) : (
-                <>
-                  <button onClick={captureImage} className="btn-capture">
-                    <Camera />
-                    <span>Capture Image</span>
-                  </button>
-                  <button onClick={stopCamera} className="btn-stop">
-                    Stop Camera
-                  </button>
-                </>
-              )}
-            </div>
-
-            {capturedImages.length > 0 && (
-              <button 
-                onClick={endTesting} 
-                className="btn-end-testing"
-                disabled={isSaving}
-              >
-                <Save />
-                <span>{isSaving ? 'Saving...' : `End Testing & Save ${capturedImages.length} Images`}</span>
-              </button>
-            )}
-          </div>
-
-          <div className="sidebar">
-            <h3 className="sidebar-header">
-              <ImageIcon />
-              <span>Captured Images ({capturedImages.length})</span>
-            </h3>
-            <div className="captured-images-list">
-              {capturedImages.length === 0 ? (
-                <p className="no-captures">No images captured yet</p>
-              ) : (
-                capturedImages.map((img) => (
-                  <div key={img.id} className="captured-image">
-                    <img src={img.data} alt="Captured" />
-                    <div className="image-footer">
-                      <span className="timestamp">{img.timestamp}</span>
-                      <button onClick={() => deleteImage(img.id)} className="btn-delete">
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
+        <div style={{ width: '40px' }}></div>
       </div>
+
+      {/* SPECIMEN INFO */}
+      <div className="specimen-info">
+        <div className="info-item"><FileText className="info-icon" /><span>{submissionDetails.title}</span></div>
+        <div className="info-item"><MapPin className="info-icon" /><span>{submissionDetails.location}</span></div>
+      </div>
+
+      {/* INSTRUCTIONS */}
+      <div className="instructions-panel">
+        <div className="instruction-header">Instructions</div>
+        <p className="instruction-text">{instructions}</p>
+      </div>
+
+      {/* CAMERA */}
+      <div className="camera-container">
+        <div className="viewfinder">
+          {isCameraActive ? (
+            <video ref={videoRef} autoPlay playsInline muted className="camera-feed" />
+          ) : (
+            <div className="camera-inactive">
+              <Camera className="camera-icon-large" />
+              <p>Camera Inactive</p>
+            </div>
+          )}
+        </div>
+
+        <canvas ref={canvasRef} style={{ display: 'none' }} />
+
+        {/* CAMERA CONTROLS */}
+        {isCameraActive && (
+          <div
+            className={`camera-controls ${
+              capturedImages.length > 0 ? 'shift-up' : ''
+            }`}
+          >
+            <button onClick={captureImage} className="capture-btn">
+              <div className="capture-ring"></div>
+            </button>
+          </div>
+        )}
+
+        {!isCameraActive && (
+          <div className="controls">
+            <button onClick={startCamera} className="control-btn primary">
+              <Camera />
+              <span>Activate Camera</span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* FEEDBACK (Prototype 2 only) */}
+      {prototypeNum === 2 && latestImage && latestImage.feedback && (
+        <div className="feedback-panel">
+          <div className="feedback-header">
+            <FileText className="feedback-icon" />
+            <h3>Image Analysis Feedback</h3>
+          </div>
+
+          <ul className="feedback-list">
+            {latestImage.feedback.map((item, idx) => (
+              <li key={idx} className={`feedback-item ${item.type === 'success' ? 'success' : 'warning'}`}>
+                {item.type === 'success' ? '✅' : '⚠️'} {item.message}
+              </li>
+            ))}
+          </ul>
+
+          {latestImage.metrics && (
+            <div className="metrics-grid">
+              {Object.entries(latestImage.metrics).map(([key, val]) => (
+                <div key={key} className="metric-box">
+                  <span className="metric-key">{key.replace(/_/g, ' ')}</span>
+                  <span className="metric-value">{val}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* CAPTURED IMAGES */}
+      {capturedImages.length > 0 && (
+        <div className="image-review">
+          <div className="review-header">
+            <ImageIcon className="review-icon" />
+            <span>Captured Images ({capturedImages.length})</span>
+          </div>
+          <div className="thumbnail-grid">
+            {capturedImages.map((img) => (
+              <div key={img.id} className="thumbnail">
+                <img src={img.data} alt="Captured" />
+                <button onClick={() => deleteImage(img.id)} className="delete-btn">×</button>
+              </div>
+            ))}
+          </div>
+
+          <button
+            onClick={endTesting}
+            className="save-btn"
+            disabled={
+              isSaving ||
+              (prototypeNum === 2 && latestImage && !latestImage.feedback)
+            }
+          >
+            <Save />
+            <span>{isSaving ? 'Saving Documentation...' : `Save ${capturedImages.length} Image${capturedImages.length > 1 ? 's' : ''}`}</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
+
 
 export default App;
