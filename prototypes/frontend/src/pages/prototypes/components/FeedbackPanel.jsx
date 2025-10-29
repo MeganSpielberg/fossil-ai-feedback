@@ -1,5 +1,5 @@
-import React from 'react';
-import { FileText } from 'lucide-react';
+import React from "react";
+import { FileText } from "lucide-react";
 
 function FeedbackPanel({ feedback, metrics }) {
   if (!feedback) return null;
@@ -13,8 +13,13 @@ function FeedbackPanel({ feedback, metrics }) {
 
       <ul className="feedback-list">
         {feedback.map((item, idx) => (
-          <li key={idx} className={`feedback-item ${item.type === 'success' ? 'success' : 'warning'}`}>
-            {item.type === 'success' ? '✅' : '⚠️'} {item.message}
+          <li
+            key={idx}
+            className={`feedback-item ${
+              item.type === "success" ? "success" : "warning"
+            }`}
+          >
+            {item.type === "success" ? "✅" : "⚠️"} {item.message}
           </li>
         ))}
       </ul>
@@ -23,7 +28,7 @@ function FeedbackPanel({ feedback, metrics }) {
         <div className="metrics-grid">
           {Object.entries(metrics).map(([key, val]) => (
             <div key={key} className="metric-box">
-              <span className="metric-key">{key.replace(/_/g, ' ')}</span>
+              <span className="metric-key">{key.replace(/_/g, " ")}</span>
               <span className="metric-value">{val}</span>
             </div>
           ))}

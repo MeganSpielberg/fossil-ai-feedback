@@ -1,8 +1,13 @@
-import React from 'react';
-import { FileText, MapPin } from 'lucide-react';
-import ProtocolCard from './components/PrototypeCard';
+import React from "react";
+import { FileText, MapPin } from "lucide-react";
+import ProtocolCard from "./components/PrototypeCard";
 
-function HomePage({ submissionDetails, setSubmissionDetails, startNewSubmission, completedPrototypes }) {
+function HomePage({
+  submissionDetails,
+  setSubmissionDetails,
+  startNewSubmission,
+  completedPrototypes,
+}) {
   return (
     <div className="home-page">
       <div className="home-header-section">
@@ -13,7 +18,7 @@ function HomePage({ submissionDetails, setSubmissionDetails, startNewSubmission,
       <div className="home-content">
         <div className="details-card">
           <h2 className="section-title">Submission Information</h2>
-          
+
           <div className="input-group">
             <label htmlFor="title" className="input-label">
               <FileText className="label-icon" />
@@ -24,7 +29,12 @@ function HomePage({ submissionDetails, setSubmissionDetails, startNewSubmission,
               type="text"
               placeholder="Enter submission title"
               value={submissionDetails.title}
-              onChange={(e) => setSubmissionDetails({...submissionDetails, title: e.target.value})}
+              onChange={(e) =>
+                setSubmissionDetails({
+                  ...submissionDetails,
+                  title: e.target.value,
+                })
+              }
               className="text-input"
             />
           </div>
@@ -39,7 +49,12 @@ function HomePage({ submissionDetails, setSubmissionDetails, startNewSubmission,
               type="text"
               placeholder="Coordinates or location name"
               value={submissionDetails.location}
-              onChange={(e) => setSubmissionDetails({...submissionDetails, location: e.target.value})}
+              onChange={(e) =>
+                setSubmissionDetails({
+                  ...submissionDetails,
+                  location: e.target.value,
+                })
+              }
               className="text-input"
             />
           </div>

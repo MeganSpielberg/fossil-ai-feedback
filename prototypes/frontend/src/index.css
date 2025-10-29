@@ -10,7 +10,8 @@
   --text-light: #666;
   --success: #4a7c59;
   --border: #d4cbb7;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+    "Ubuntu", sans-serif;
 }
 
 * {
@@ -43,7 +44,11 @@ button {
 }
 
 .home-header-section {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--primary) 0%,
+    var(--primary-dark) 100%
+  );
   color: white;
   padding: 40px 20px 30px;
   text-align: center;
@@ -436,7 +441,7 @@ button {
 
 /* === CAMERA CONTROLS === */
 .camera-container {
-  position: relative; /* this is key */
+  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -467,8 +472,7 @@ button {
   border-radius: 50%;
   background: radial-gradient(circle at center, #ffffff 0%, #e0e0e0 80%);
   border: 5px solid rgba(255, 255, 255, 0.7);
-  box-shadow:
-    0 6px 12px rgba(0, 0, 0, 0.4),
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4),
     inset 0 2px 4px rgba(255, 255, 255, 0.3);
   display: flex;
   align-items: center;
@@ -483,9 +487,7 @@ button {
 
 .capture-btn:active {
   transform: scale(0.95);
-  box-shadow:
-    0 2px 6px rgba(0, 0, 0, 0.4),
-    inset 0 4px 8px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4), inset 0 4px 8px rgba(0, 0, 0, 0.4);
 }
 
 /* Inner colored circle */
@@ -494,8 +496,7 @@ button {
   height: 65px;
   background: var(--primary);
   border-radius: 50%;
-  box-shadow:
-    inset 0 3px 6px rgba(0, 0, 0, 0.3),
+  box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.3),
     0 0 0 3px rgba(255, 255, 255, 0.7);
   transition: all 0.2s ease;
 }
@@ -504,7 +505,6 @@ button {
   background: var(--primary-dark);
   transform: scale(0.9);
 }
-
 
 /* Image Review */
 .image-review {
@@ -606,11 +606,11 @@ button {
   .app-title {
     font-size: 1.5rem;
   }
-  
+
   .home-header-section {
     padding: 32px 20px 24px;
   }
-  
+
   .protocol-card {
     padding: 16px;
   }
@@ -636,7 +636,7 @@ button {
   border-radius: 12px;
   padding: 1rem 1.5rem;
   margin: 1.5rem 0;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .feedback-header {
@@ -802,4 +802,45 @@ button {
   font-size: 0.9rem;
   font-weight: 600;
   color: #fff;
+}
+
+.realtime-feedback-overlay {
+  position: absolute;
+  top: 10px; /* distance from top of viewfinder */
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.feedback-box {
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border-radius: 12px;
+  padding: 10px 16px;
+  max-width: 90%;
+  font-size: 0.9rem;
+  backdrop-filter: blur(6px);
+}
+
+.feedback-score {
+  font-weight: bold;
+  margin-bottom: 4px;
+  text-align: center;
+}
+
+.feedback-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.feedback-list li.ok {
+  color: #4caf50;
+}
+
+.feedback-list li.warn {
+  color: #ffb74d;
 }

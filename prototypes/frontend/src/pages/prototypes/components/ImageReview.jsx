@@ -1,12 +1,12 @@
-import React from 'react';
-import { ImageIcon, Save } from 'lucide-react';
+import React from "react";
+import { ImageIcon, Save } from "lucide-react";
 
-function ImageReview({ 
-  capturedImages, 
-  onDeleteImage, 
-  onEndTesting, 
+function ImageReview({
+  capturedImages,
+  onDeleteImage,
+  onEndTesting,
   isSaving,
-  disabled 
+  disabled,
 }) {
   if (capturedImages.length === 0) return null;
 
@@ -20,7 +20,12 @@ function ImageReview({
         {capturedImages.map((img) => (
           <div key={img.id} className="thumbnail">
             <img src={img.data} alt="Captured" />
-            <button onClick={() => onDeleteImage(img.id)} className="delete-btn">×</button>
+            <button
+              onClick={() => onDeleteImage(img.id)}
+              className="delete-btn"
+            >
+              ×
+            </button>
           </div>
         ))}
       </div>
@@ -32,10 +37,11 @@ function ImageReview({
       >
         <Save />
         <span>
-          {isSaving 
-            ? 'Saving Documentation...' 
-            : `Save ${capturedImages.length} Image${capturedImages.length > 1 ? 's' : ''}`
-          }
+          {isSaving
+            ? "Saving Documentation..."
+            : `Save ${capturedImages.length} Image${
+                capturedImages.length > 1 ? "s" : ""
+              }`}
         </span>
       </button>
     </div>
