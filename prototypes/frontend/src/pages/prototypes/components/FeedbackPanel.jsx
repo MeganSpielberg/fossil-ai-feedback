@@ -2,7 +2,7 @@ import React from "react";
 import { FileText } from "lucide-react";
 
 function FeedbackPanel({ feedback, metrics }) {
-  if (!feedback) return null;
+  if (!feedback || feedback.length === 0) return null;
 
   return (
     <div className="feedback-panel">
@@ -15,25 +15,15 @@ function FeedbackPanel({ feedback, metrics }) {
         {feedback.map((item, idx) => (
           <li
             key={idx}
-            className={`feedback-item ${
-              item.type === "success" ? "success" : "warning"
-            }`}
+            className={`feedback-item ${item.type === "success" ? "success" : "warning"}`}
           >
-            {item.type === "success" ? "✅" : "⚠️"} {item.message}
+            <span className="feedback-icon-emoji">
+              {item.type === "success" ? "✅" : "⚠️"}
+            </span>
+            <span className="feedback-message">{item.message}</span>
           </li>
         ))}
       </ul>
-
-      {metrics && (
-        <div className="metrics-grid">
-          {Object.entries(metrics).map(([key, val]) => (
-            <div key={key} className="metric-box">
-              <span className="metric-key">{key.replace(/_/g, " ")}</span>
-              <span className="metric-value">{val}</span>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

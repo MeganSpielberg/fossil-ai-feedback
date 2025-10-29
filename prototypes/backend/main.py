@@ -1,3 +1,4 @@
+from turtle import title
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import os
@@ -10,12 +11,10 @@ from PIL import Image
 from sklearn.cluster import KMeans
 import io
 import base64
+from database import supabase, upload_image_to_supabase
 
 app = Flask(__name__)
 cors = CORS(app, origins="*")
-
-SUBMISSIONS_FOLDER = 'prototypes/backend/submissions'
-os.makedirs(SUBMISSIONS_FOLDER, exist_ok=True)
 
 def analyze_fossil_quality(image_data):
     """Analyze image quality and return feedback"""
@@ -95,62 +94,50 @@ def analyze_image():
         print(f"Error analyzing image: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
-@app.route('/api/images', methods=['GET'])
-def get_images():
-    submissions = []
-    if os.path.exists(SUBMISSIONS_FOLDER):
-        for folder in os.listdir(SUBMISSIONS_FOLDER):
-            folder_path = os.path.join(SUBMISSIONS_FOLDER, folder)
-            if os.path.isdir(folder_path):
-                submissions.append(folder)
-    return jsonify({"submissions": submissions})
-
-@app.route('/api/submit', methods=['POST'])
+@app.route("/api/submit", methods=["POST"])
 def submit_images():
     try:
-        submission_id = request.form.get('submission_id')
-        title = request.form.get('title')
-        location = request.form.get('location')
-        prototype = request.form.get('prototype')
-        
-        if not all([submission_id, title, location, prototype]):
+        title = request.form.get("title")
+        location = request.form.get("location")
+        prototype = request.form.get("prototype")
+
+        if not all([title, location, prototype]):
             return jsonify({"error": "Missing required fields"}), 400
-        
-        submission_folder = os.path.join(SUBMISSIONS_FOLDER, submission_id)
-        os.makedirs(submission_folder, exist_ok=True)
-        
-        details = {
+
+        submission_row = supabase.table("submissions").insert({
             "title": title,
             "location": location,
-            "prototype": prototype,
-            "date": datetime.now().isoformat(),
-            "submission_id": submission_id
-        }
-        
-        details_path = os.path.join(submission_folder, 'details.json')
-        with open(details_path, 'w') as f:
-            json.dump(details, f, indent=2)
-        
-        images = request.files.getlist('images')
+            "prototype": prototype
+        }).execute()
+
+        # Use data directly, no .error or .status_code checks
+        submission_id = submission_row.data[0]["id"]
+
+        images = request.files.getlist("images")
         saved_count = 0
-        
+
         for idx, image in enumerate(images):
             if image:
-                date_str = datetime.now().strftime('%Y%m%d_%H%M%S')
-                safe_title = secure_filename(title.replace(' ', '_'))
-                filename = f"{safe_title}_{date_str}_{prototype}_{idx+1}.jpg"
-                
-                filepath = os.path.join(submission_folder, filename)
-                image.save(filepath)
+                file_bytes = image.read()
+                safe_filename = f"{submission_id}_{idx + 1}.jpg"
+                url = upload_image_to_supabase(file_bytes, safe_filename)
+                image_row = supabase.table("images").insert({
+                    "submission_id": submission_id,
+                    "filename": safe_filename,
+                    "image_url": url,
+                    "feedback": {},
+                    "metrics": {}
+                }).execute()
+
+                # Assume success if no exception
                 saved_count += 1
-        
+
         return jsonify({
             "success": True,
             "submission_id": submission_id,
-            "images_saved": saved_count,
-            "folder": submission_folder
+            "images_saved": saved_count
         })
-        
+
     except Exception as e:
         print(f"Error: {str(e)}")
         return jsonify({"error": str(e)}), 500
