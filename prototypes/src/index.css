@@ -1,0 +1,107 @@
+/* Global Styles */
+:root {
+  --primary: #2c5f4f;
+  --primary-dark: #1a3d2f;
+  --secondary: #d4a574;
+  --accent: #8b7355;
+  --bg-light: #f5f3ed;
+  --bg-dark: #1a1a1a;
+  --text-dark: #2d2d2d;
+  --text-light: #666;
+  --success: #4a7c59;
+  --border: #d4cbb7;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+    "Ubuntu", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg-light);
+  color: var(--text-dark);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* App Container */
+.app-container {
+  min-height: 100vh;
+  background: var(--bg-light);
+}
+
+/* Modal Styles (shared across app) */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  background: var(--bg-light);
+  border-radius: 12px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--text-dark);
+}
+
+.modal-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: transparent;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-dark);
+  transition: all 0.2s;
+  padding: 0;
+  font-weight: 300;
+  position: relative;
+}
+
+.modal-close:hover {
+  background: rgba(212, 165, 116, 0.15);
+}
+
+.modal-text {
+  padding: 20px;
+  margin: 0;
+  color: var(--text-dark);
+  line-height: 1.6;
+}
