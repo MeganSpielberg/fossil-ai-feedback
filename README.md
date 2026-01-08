@@ -4,7 +4,7 @@
 
 [![Project Page](https://img.shields.io/badge/Project-Page-2563eb?style=for-the-badge)](https://meganspielberg.github.io/fossil-ai-feedback/)
 [![Paper](https://img.shields.io/badge/Paper-PDF-dc2626?style=for-the-badge)](https://meganspielberg.github.io/fossil-ai-feedback/static/pdfs/Research_Paper_LegaSea.pdf)
-[![License](https://img.shields.io/badge/License-CC%20BY--SA%204.0-10b981?style=for-the-badge)](http://creativecommons.org/licenses/by-sa/4.0/)
+[![Poster](https://img.shields.io/badge/Poster-PDF-10b981?style=for-the-badge)](https://meganspielberg.github.io/fossil-ai-feedback/static/pdfs/ResearchPosterLegaSeaFinalV1.pdf)
 
 </div>
 
