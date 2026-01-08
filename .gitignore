@@ -34,4 +34,7 @@ coverage/
 *.csv
 *.jpg
 *.png
+!static/images/*.jpg
+!static/images/*.png
+!static/images/*.jpeg
 prototypes/backend/*
