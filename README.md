@@ -166,7 +166,7 @@ If you use this work in your research, please cite:
   author={Spielberg, Megan},
   year={2026},
   institution={Fontys University of Applied Sciences},
-  howpublished={Master's Thesis},
+  howpublished={Master's project},
   url={https://meganspielberg.github.io/fossil-ai-feedback/}
 }
 ```
