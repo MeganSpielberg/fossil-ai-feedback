@@ -1,0 +1,18 @@
+\begin{table}[htbp]
+\centering
+\caption{Mean Absolute Error (MAE) comparison across thresholding methods for image quality metrics. Lower values indicate better performance.}
+\label{tab:mae_comparison}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Method} & \textbf{Lighting Mean} & \textbf{Sharpness Metric} & \textbf{Contrast Metric} \\
+\midrule
+Combined Mean & 1.828 & 1.111 & 1.242 \\
+Combined Median & 1.909 & 1.081 & 1.222 \\
+Decision Tree & 1.616 & 1.434 & 1.273 \\
+GMM & 2.040 & 1.040 & 1.172 \\
+K-Means & 2.040 & 0.960 & 1.465 \\
+Median Midpoint & 2.222 & 1.354 & 0.949 \\
+Percentiles & 1.657 & 1.263 & 1.242 \\
+\bottomrule
+\end{tabular}
+\end{table}

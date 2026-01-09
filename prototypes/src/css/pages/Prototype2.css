@@ -1,0 +1,81 @@
+/* Prototype2 specific styles */
+
+.header-spacer {
+  width: 40px;
+}
+
+.post-capture-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.captured-image-preview {
+  width: 100%;
+  border-radius: 8px;
+  max-height: 240px;
+  object-fit: contain;
+  background: #111;
+}
+
+.tip-box {
+  background: rgba(212, 165, 116, 0.15);
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  font-size: 0.9rem;
+  color: var(--text-dark);
+  border: 1px solid var(--border);
+}
+
+.tip-divider {
+  margin-top: 6px;
+}
+
+/* Keep / Discard actions */
+.keep-discard-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.keep-discard-actions button {
+  font: inherit;
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--panel-bg, #1e1e1e);
+  color: var(--text-light);
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+.keep-discard-actions .keep-btn {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.keep-discard-actions .keep-btn:hover,
+.keep-discard-actions .keep-btn:focus-visible {
+  background: var(--primary-hover, #2d7d46);
+  outline: none;
+}
+
+.keep-discard-actions .discard-btn {
+  background: #2a2a2a;
+  color: #ddd;
+}
+
+.keep-discard-actions .discard-btn:hover,
+.keep-discard-actions .discard-btn:focus-visible {
+  background: #3a3a3a;
+  outline: none;
+}
+
+.keep-discard-actions button:active {
+  transform: translateY(1px);
+}
+
+/* Always horizontal; removed mobile column stacking per new requirement */
