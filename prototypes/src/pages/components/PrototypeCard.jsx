@@ -1,6 +1,12 @@
 import React from 'react';
 import { Camera, Check } from 'lucide-react';
 
+/**
+ * Button card for selecting a prototype.
+ *
+ * The Home page decides which cards to show and in what order.
+ */
+
 function ProtocolCard({ number, title, description, onClick, isCompleted, disabled }) {
   return (
     <button 

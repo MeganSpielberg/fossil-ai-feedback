@@ -1,10 +1,19 @@
+/**
+ * Supabase client and helpers.
+ *
+ * This module centralizes:
+ * - Supabase client creation
+ * - Storage uploads for captured images
+ * - Testing order selection and completion tracking
+ * - Basic device metadata collection
+ */
 import { createClient } from "@supabase/supabase-js";
 
-// Read Supabase credentials from environment variables
+// Read Supabase credentials from environment variables.
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
 
-// Validate environment variables
+// Validate environment variables.
 if (!supabaseUrl || !supabaseKey) {
   console.error('Supabase configuration missing:');
   console.error('VITE_SUPABASE_URL:', supabaseUrl ? 'Set' : 'Missing');
@@ -12,16 +21,22 @@ if (!supabaseUrl || !supabaseKey) {
   throw new Error('Supabase environment variables are not configured. Please check your .env file.');
 }
 
-// Initialize Supabase client
+// Initialize Supabase client.
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Helper: Upload image to Supabase storage
+/**
+ * Upload a captured image to the Supabase Storage bucket named `submissions`.
+ *
+ * @param {string} imageDataUrl Base64 data URL.
+ * @param {string} filename File name to use in the bucket.
+ * @returns {Promise<string>} Public URL of the uploaded image.
+ */
 export async function uploadImageToStorage(imageDataUrl, filename) {
-  // Convert base64 to blob
+  // Convert base64 data URL to a Blob.
   const response = await fetch(imageDataUrl);
   const blob = await response.blob();
 
-  // Upload to storage bucket
+  // Upload to storage bucket.
   const { error: uploadError } = await supabase.storage
     .from("submissions")
     .upload(filename, blob, {
@@ -31,7 +46,7 @@ export async function uploadImageToStorage(imageDataUrl, filename) {
 
   if (uploadError) throw uploadError;
 
-  // Get public URL
+  // Get public URL.
   const { data: publicData, error: publicError } = supabase.storage
     .from("submissions")
     .getPublicUrl(filename);
@@ -40,7 +55,11 @@ export async function uploadImageToStorage(imageDataUrl, filename) {
   return publicData.publicUrl;
 }
 
-// Get testing order with fewest completions
+/**
+ * Pick a testing order with the fewest completions.
+ *
+ * The expectation is that `testing_orders.order_sequence` is a string like `p1,p2,p3`.
+ */
 export async function getTestingOrder() {
   const { data: orders, error } = await supabase
     .from("testing_orders")
@@ -54,9 +73,13 @@ export async function getTestingOrder() {
   return orders[0];
 }
 
-// Increment completion count for a specific testing order
+/**
+ * Increment the `testing_orders.completions` counter.
+ *
+ * This is used after a full submission (all three prototypes) is uploaded.
+ */
 export async function incrementOrderCompletion(orderId) {
-  // Fetch current completions
+  // Fetch current completions.
   const { data: currentData, error: fetchError } = await supabase
     .from("testing_orders")
     .select("completions")
@@ -65,7 +88,7 @@ export async function incrementOrderCompletion(orderId) {
   
   if (fetchError) throw fetchError;
   
-  // Increment and update
+  // Increment and update.
   const { error: updateError } = await supabase
     .from("testing_orders")
     .update({ completions: (currentData?.completions || 0) + 1 })
@@ -76,7 +99,11 @@ export async function incrementOrderCompletion(orderId) {
 
 export default supabase;
 
-// Helper: Detect device information
+/**
+ * Collect basic device and browser info.
+ *
+ * This is best effort and depends on what the browser exposes.
+ */
 export function getDeviceInfo() {
   const userAgent = navigator.userAgent;
   const platform = navigator.platform;

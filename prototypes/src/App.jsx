@@ -1,3 +1,13 @@
+/**
+ * Main application component.
+ *
+ * Responsibilities:
+ * - Fetch the assigned testing order from Supabase on startup.
+ * - Collect submission details on the Home page.
+ * - Enforce prototype completion order.
+ * - Hold captured images, time tracking data, and flashlight usage until final upload.
+ * - Submit one combined record set to Supabase after all three prototypes are completed.
+ */
 import React, { useState, useEffect } from "react";
 import HomePage from "./pages/HomePage";
 import Prototype1 from "./pages/prototypes/Prototype1";
@@ -15,18 +25,18 @@ function App() {
   });
   const [currentSubmissionId, setCurrentSubmissionId] = useState(null);
   const [completedPrototypes, setCompletedPrototypes] = useState([]);
-  // store captured images per prototype until final submission
+  // Captured images per prototype. Kept in memory until final submission.
   const [imagesByPrototype, setImagesByPrototype] = useState({});
-  // store time spent data per prototype
+  // Time tracking data per prototype.
   const [timeSpentData, setTimeSpentData] = useState({});
-  // store flashlight usage per prototype
+  // Flashlight usage per prototype.
   const [flashlightData, setFlashlightData] = useState({});
-  // store the testing order assigned to this session
+  // Testing order assigned to this session.
   const [testingOrder, setTestingOrder] = useState(null);
   const [testingOrderId, setTestingOrderId] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch testing order on app initialization
+  // Fetch testing order on app initialization.
   useEffect(() => {
     const fetchTestingOrder = async () => {
       try {
@@ -44,6 +54,10 @@ function App() {
     fetchTestingOrder();
   }, []);
 
+  /**
+   * Start one prototype for the current submission.
+   * Enforces that the user can only start the next prototype in their assigned order.
+   */
   const startNewSubmission = (prototypeNum) => {
     if (completedPrototypes.includes(prototypeNum)) {
       alert(
@@ -52,14 +66,20 @@ function App() {
       return;
     }
 
-    if (!submissionDetails.username.trim() || !submissionDetails.title.trim() || !submissionDetails.location.trim()) {
+    if (
+      !submissionDetails.username.trim() ||
+      !submissionDetails.title.trim() ||
+      !submissionDetails.location.trim()
+    ) {
       alert("Please enter Username, Title/Name, and Location before starting");
       return;
     }
 
     // Enforce the testing order: can only start if it's the next in sequence
     const nextPrototypeIndex = completedPrototypes.length;
-    const nextPrototypeInOrder = testingOrder ? parseInt(testingOrder[nextPrototypeIndex].replace("p", "")) : null;
+    const nextPrototypeInOrder = testingOrder
+      ? parseInt(testingOrder[nextPrototypeIndex].replace("p", ""))
+      : null;
     
     if (prototypeNum !== nextPrototypeInOrder) {
       alert(
@@ -84,9 +104,18 @@ function App() {
     setCompletedPrototypes(newCompleted);
   };
 
-  // Save images from a prototype into App state. When all three prototypes are
-  // present, send a single combined submission to backend.
-  const savePrototypeImages = async (prototypeNum, capturedImages, timeData = null, flashlightUsed = false) => {
+  /**
+   * Save one prototype's images into App state.
+   *
+   * After the third prototype is saved, this will upload all images and create all
+   * related database rows in Supabase via `submitAllImages`.
+   */
+  const savePrototypeImages = async (
+    prototypeNum,
+    capturedImages,
+    timeData = null,
+    flashlightUsed = false
+  ) => {
     const key = `p${prototypeNum}`;
     const newMap = { ...imagesByPrototype, [key]: capturedImages };
     setImagesByPrototype(newMap);
@@ -98,48 +127,59 @@ function App() {
       setTimeSpentData(newTimeSpentData);
     }
 
-    // Update flashlight data
+    // Update flashlight data.
     let newFlashlightData = { ...flashlightData, [key]: flashlightUsed };
     setFlashlightData(newFlashlightData);
 
-    // Calculate what the new completed list would be
+    // Calculate what the new completed list would be.
     const newCompleted = [...completedPrototypes, prototypeNum];
 
-    // If all three prototypes completed, submit once
-    if (newCompleted.includes(1) && newCompleted.includes(2) && newCompleted.includes(3)) {
+    // If all three prototypes are completed, submit once.
+    if (
+      newCompleted.includes(1) &&
+      newCompleted.includes(2) &&
+      newCompleted.includes(3)
+    ) {
       try {
-        // Wait for backend submission with the updated time data and flashlight data
-        await submitAllImages(currentSubmissionId, submissionDetails, newMap, testingOrderId, newTimeSpentData, newFlashlightData);
+        // Upload images and create all rows in Supabase.
+        await submitAllImages(
+          currentSubmissionId,
+          submissionDetails,
+          newMap,
+          testingOrderId,
+          newTimeSpentData,
+          newFlashlightData
+        );
         
         // Only mark as complete after successful submission
         setCompletedPrototypes(newCompleted);
         
         alert("All prototypes submitted successfully!");
         
-        // Increment the testing order completion count
+        // Increment the testing order completion count.
         if (testingOrderId) {
           await incrementOrderCompletion(testingOrderId);
         }
         
-        // Navigate to home to show completion card
-        // Keep completedPrototypes so HomePage shows the completion card
-        // Only reset when user starts a new submission
+        // Navigate to Home to show the completion card.
+        // Keep completedPrototypes so HomePage can show the completion card.
+        // Reset happens when the user starts a new submission.
         setCurrentPage("home");
       } catch (err) {
         console.error("Error submitting all images:", err);
         alert("Error submitting all images: " + err.message);
-        // Don't mark as complete or navigate away on error
-        // User can retry or go back manually
+        // Do not mark as complete or navigate away on error.
+        // The user can retry or go back manually.
       }
     } else {
-      // Not all done yet — mark as complete and navigate back to home so user can start next prototype
+      // Not all done yet. Mark as complete and go back to Home so the user can start the next prototype.
       setCompletedPrototypes(newCompleted);
       setCurrentPage("home");
     }
   };
 
 
-  // Reset submission state when user starts a new submission
+  // Reset submission state when the user starts a new submission.
   const handleNewSubmission = (prototypeNum) => {
     // Only allow new submission if all previous ones are complete or this is the first
     if (completedPrototypes.length === 3) {

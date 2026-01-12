@@ -7,6 +7,13 @@ import "../../css/pages/PrototypePage.css";
 import "../../css/pages/Prototype1.css";
 import { AiOutlineClose } from "react-icons/ai";
 
+/**
+ * Prototype 1.
+ *
+ * Baseline camera capture with no automated feedback.
+ * Images are kept locally until all prototypes are completed.
+ */
+
 function Prototype1({
   setCurrentPage,
   submissionDetails,
@@ -23,16 +30,14 @@ function Prototype1({
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
-  // Initialize time tracking
+  // Track time spent in instructions and active use.
   const { startInstructionsTimer, stopInstructionsTimer, getFinalTimeData } =
     useTimeTracking("Prototype1");
 
-  // Start timer for instructions since they show by default
+  // Start the instructions timer since the modal is open by default.
   useEffect(() => {
-    if (showInstructions) {
-      startInstructionsTimer();
-    }
-  }, []); // Only run on mount
+    startInstructionsTimer();
+  }, [startInstructionsTimer]);
 
   const prototypeNum = 1;
   const title = "Baseline";
@@ -62,7 +67,7 @@ function Prototype1({
       alert("Could not access camera: " + error.message);
     }
   };
-  // Set video source when stream is available - no delay
+  // Set the video element source as soon as the stream is available.
   useEffect(() => {
     if (stream && videoRef.current && isCameraActive) {
       videoRef.current.srcObject = stream;
@@ -113,7 +118,7 @@ function Prototype1({
             advanced: [{ torch: !isTorchOn }],
           });
           setIsTorchOn(!isTorchOn);
-          // Track that flashlight was used at least once
+          // Track that flashlight was used at least once.
           if (!isTorchOn) {
             setFlashlightUsed(true);
           }
@@ -134,10 +139,10 @@ function Prototype1({
 
     setIsSaving(true);
     try {
-      // Get final time data
+      // Get final time data.
       const timeData = getFinalTimeData();
 
-      // Save to parent state with time data and flashlight usage; App will submit all prototypes when done
+      // Save to parent state. App submits after all three prototypes are complete.
       await savePrototypeImages(
         prototypeNum,
         capturedImages,

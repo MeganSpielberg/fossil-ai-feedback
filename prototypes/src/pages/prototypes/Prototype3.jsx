@@ -16,6 +16,14 @@ import { useTimeTracking } from "../../utils/useTimeTracking";
 import "../../css/pages/PrototypePage.css";
 import "../../css/pages/Prototype3.css";
 
+/**
+ * Prototype 3.
+ *
+ * Real time feedback.
+ * While the camera is active we periodically capture a frame, run local analysis,
+ * and update the on screen indicator.
+ */
+
 function Prototype3({
   setCurrentPage,
   submissionDetails,
@@ -36,16 +44,14 @@ function Prototype3({
   const [showAlbum, setShowAlbum] = useState(false);
   const previousMetricsRef = useRef(null);
 
-  // Initialize time tracking
+  // Track time spent in instructions and active use.
   const { startInstructionsTimer, stopInstructionsTimer, getFinalTimeData } =
     useTimeTracking("Prototype3");
 
-  // Start timer for instructions since they show by default
+  // Start the instructions timer since the modal is open by default.
   useEffect(() => {
-    if (showInstructions) {
-      startInstructionsTimer();
-    }
-  }, []); // Only run on mount
+    startInstructionsTimer();
+  }, [startInstructionsTimer]);
 
   const prototypeNum = 3;
   const title = "Real-time feedback";
@@ -62,13 +68,12 @@ function Prototype3({
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     const imageData = canvas.toDataURL("image/jpeg", 0.5);
 
-    // Frame captured for analysis
+    // Capture a frame for analysis.
 
     try {
       const data = await analyzeImage(imageData);
 
-      // Apply hysteresis: only update if metrics changed significantly
-      // This prevents flickering when values hover near thresholds
+      // Reduce flicker by only updating when a rating changes.
       const prev = previousMetricsRef.current;
       if (prev) {
         const currentRatings = [
@@ -82,13 +87,12 @@ function Prototype3({
           prev.contrast_rating,
         ];
 
-        // Only update if at least one rating changed AND it's been stable for this frame
-        // This creates a "sticky" effect that reduces flicker
+        // Only update if at least one rating changed.
         const ratingsChanged = currentRatings.some(
           (r, i) => r !== prevRatings[i]
         );
         if (!ratingsChanged) {
-          // Keep previous feedback to avoid flicker
+          // Keep previous feedback to avoid flicker.
           return;
         }
       }
@@ -123,7 +127,7 @@ function Prototype3({
       alert("Could not access camera: " + error.message);
     }
   };
-  // Set video source when stream is available - no delay
+  // Set the video element source as soon as the stream is available.
   useEffect(() => {
     if (stream && videoRef.current && isCameraActive) {
       videoRef.current.srcObject = stream;
@@ -154,7 +158,7 @@ function Prototype3({
             advanced: [{ torch: !isTorchOn }],
           });
           setIsTorchOn(!isTorchOn);
-          // Track that flashlight was used at least once
+          // Track that flashlight was used at least once.
           if (!isTorchOn) {
             setFlashlightUsed(true);
           }
@@ -195,7 +199,7 @@ function Prototype3({
     }
     setIsSaving(true);
     try {
-      // Get final time data
+      // Get final time data.
       const timeData = getFinalTimeData();
 
       await savePrototypeImages(
@@ -216,7 +220,7 @@ function Prototype3({
     }
   };
 
-  // Start/stop real-time analysis when camera is active
+  // Start or stop real time analysis when the camera is active.
   useEffect(() => {
     if (isCameraActive) {
       analysisIntervalRef.current = setInterval(analyzeFrame, 1000);
@@ -453,7 +457,7 @@ function Prototype3({
               </div>
               <div className="realtime-icons-grid">
                 {(() => {
-                  // Map feedback to icon-based display
+                  // Map feedback messages to the three icon buckets.
                   const lightingFeedback = realtimeFeedback.find(
                     (f) =>
                       f.message.toLowerCase().includes("lighting") ||

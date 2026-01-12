@@ -3,6 +3,12 @@ import { ImageIcon, Save } from "lucide-react";
 import "../../../css/components/ImageReview.css";
 import { AiOutlineClose } from "react-icons/ai";
 
+/**
+ * Shared image review section.
+ *
+ * Displays thumbnails and triggers the final save action.
+ */
+
 function ImageReview({
   capturedImages,
   onDeleteImage,

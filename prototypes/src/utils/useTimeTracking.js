@@ -1,28 +1,34 @@
-import { useState, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
- * Custom hook for tracking time spent on different parts of the application
- * @param {string} pageName - Name of the page/prototype being tracked
- * @returns {Object} - Time tracking data and control functions
+ * Track time spent on a page.
+ *
+ * This hook is used by each prototype page to record:
+ * - Total time on the page
+ * - Time spent viewing the instructions modal
+ * - Active time (total minus instructions)
+ *
+ * Times are stored in seconds in the final payload returned by `getFinalTimeData`.
  */
 export function useTimeTracking(pageName) {
   const [timeData, setTimeData] = useState({
     totalTime: 0,
     instructionsTime: 0,
-    activeTime: 0, // Time when actually using the page (not in instructions)
+    // Time when actually using the page (not in instructions).
+    activeTime: 0,
   });
 
   const startTimeRef = useRef(null);
   const instructionsStartRef = useRef(null);
   const isActiveRef = useRef(true);
 
-  // Start tracking when component mounts
+  // Start tracking when component mounts.
   useEffect(() => {
     startTimeRef.current = Date.now();
     isActiveRef.current = true;
 
     return () => {
-      // Clean up when component unmounts
+      // Clean up when component unmounts.
       if (startTimeRef.current && isActiveRef.current) {
         const totalElapsed = Date.now() - startTimeRef.current;
         setTimeData(prev => ({
@@ -33,13 +39,13 @@ export function useTimeTracking(pageName) {
     };
   }, []);
 
-  // Track when instructions modal opens
-  const startInstructionsTimer = () => {
+  // Track when instructions modal opens.
+  const startInstructionsTimer = useCallback(() => {
     instructionsStartRef.current = Date.now();
-  };
+  }, []);
 
-  // Track when instructions modal closes
-  const stopInstructionsTimer = () => {
+  // Track when instructions modal closes.
+  const stopInstructionsTimer = useCallback(() => {
     if (instructionsStartRef.current) {
       const instructionsElapsed = Date.now() - instructionsStartRef.current;
       setTimeData(prev => ({
@@ -48,10 +54,10 @@ export function useTimeTracking(pageName) {
       }));
       instructionsStartRef.current = null;
     }
-  };
+  }, []);
 
-  // Get final time data (call before submitting)
-  const getFinalTimeData = () => {
+  // Get final time data. Call this right before submitting.
+  const getFinalTimeData = useCallback(() => {
     const totalElapsed = startTimeRef.current ? Date.now() - startTimeRef.current : 0;
     const total = timeData.totalTime + totalElapsed;
     const instructionsTotal = timeData.instructionsTime + 
@@ -60,12 +66,13 @@ export function useTimeTracking(pageName) {
 
     return {
       page: pageName,
-      totalTime: Math.round(total / 1000), // Convert to seconds
+      // Convert to seconds.
+      totalTime: Math.round(total / 1000),
       instructionsTime: Math.round(instructionsTotal / 1000),
       activeTime: Math.round(activeTotal / 1000),
       timestamp: new Date().toISOString(),
     };
-  };
+  }, [pageName, timeData.instructionsTime, timeData.totalTime]);
 
   return {
     timeData,

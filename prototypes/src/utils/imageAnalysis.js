@@ -1,21 +1,31 @@
-// Image quality thresholds (adjusted for more lenient brightness/sharpness, stricter contrast)
+/**
+ * Local image analysis.
+ *
+ * This module runs in the browser and computes simple quality metrics from a
+ * captured JPEG data URL.
+ *
+ * Output shape:
+ * - `metrics` contains raw values and 5 level ratings
+ * - `feedback` contains three buckets: warning, info, success
+ *
+ * The UI uses `feedback.type` to choose colors.
+ */
+
+// Image quality thresholds for mapping a raw metric to a 5 level rating.
 const IMAGE_QUALITY_THRESHOLDS = {
   lighting_mean: {
     method: "kmeans",
-    // Slightly stricter lighting thresholds
+    // Lighting thresholds.
     thresholds: [60, 90, 120, 180],
   },
   sharpness_metric: {
     method: "variance_of_laplacian",
-    // Variance of Laplacian thresholds - adjusted based on real device data
-    // Very blurry: <35, Blurry: 35-70, OK: 70-120, Good: 120-180, Sharp: 180+
+    // Variance of Laplacian thresholds.
     thresholds: [40, 80, 110, 150],
   },
   contrast_metric: {
     method: "center_edge_contrast",
-    // Center-to-edge contrast thresholds - measures difference between object and background
-    // Higher value = better separation between specimen (center) and background (edges)
-    // Very Poor: <20, Poor: 20-35, Intermediate: 35-50, Good: 50-70, Very Good: 70+
+    // Center to edge contrast thresholds.
     thresholds: [15, 30, 40, 60],
   }
 };
@@ -31,7 +41,7 @@ function rateValue(value, thresholds) {
   return RATING_LABELS[RATING_LABELS.length - 1];
 }
 
-// Convert image data to grayscale array
+// Convert image data to a grayscale array.
 function getGrayscaleData(imageData) {
   const data = imageData.data;
   const grayscale = new Uint8Array(imageData.width * imageData.height);
@@ -44,9 +54,9 @@ function getGrayscaleData(imageData) {
   return grayscale;
 }
 
-// Calculate contrast between center and edges - measures object vs background separation
+// Calculate contrast between center and edges.
 function calculateCenterEdgeContrast(grayscale, width, height) {
-  // Define center circle (where object should be placed)
+  // Define center circle where the specimen is expected.
   const centerX = width / 2;
   const centerY = height / 2;
   const radius = Math.min(width, height) * 0.3; // 60% diameter circle
@@ -56,7 +66,7 @@ function calculateCenterEdgeContrast(grayscale, width, height) {
   let edgeSum = 0;
   let edgeCount = 0;
   
-  // Sample pixels and categorize as center or edge
+  // Sample pixels and categorize as center or edge.
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const dx = x - centerX;
@@ -65,91 +75,41 @@ function calculateCenterEdgeContrast(grayscale, width, height) {
       const idx = y * width + x;
       
       if (distance < radius) {
-        // Inside center circle
+        // Inside center circle.
         centerSum += grayscale[idx];
         centerCount++;
       } else if (distance > radius * 1.5) {
-        // Far from center (definitely background)
+        // Far from center.
         edgeSum += grayscale[idx];
         edgeCount++;
       }
     }
   }
   
-  // Calculate average brightness in center vs edges
+  // Calculate average brightness in center vs edges.
   const centerAvg = centerSum / centerCount;
   const edgeAvg = edgeSum / edgeCount;
   
-  // Return absolute difference - higher = better contrast between object and background
+  // Return absolute difference. Higher means better separation.
   return Math.abs(centerAvg - edgeAvg);
 }
 
-// Calculate mean of array
+// Calculate mean of array.
 function mean(array) {
   return array.reduce((sum, val) => sum + val, 0) / array.length;
 }
 
-// Calculate standard deviation
-function standardDeviation(array, meanValue) {
-  const variance = array.reduce((sum, val) => sum + Math.pow(val - meanValue, 2), 0) / array.length;
-  return Math.sqrt(variance);
-}
-
-// Calculate FFT-based sharpness metric (matches Python implementation)
-function calculateFFTSharpness(grayscale, width, height) {
-  // Create 2D array
-  const img2d = [];
-  for (let y = 0; y < height; y++) {
-    img2d[y] = [];
-    for (let x = 0; x < width; x++) {
-      img2d[y][x] = grayscale[y * width + x];
-    }
-  }
-  
-  // Simple FFT approximation: use gradient magnitude as proxy for high-frequency content
-  // This is a simplified version; full FFT would require a library
-  let highFreqEnergy = 0;
-  let lowFreqEnergy = 0;
-  
-  const centerY = Math.floor(height / 2);
-  const centerX = Math.floor(width / 2);
-  const rThreshold = Math.min(height, width) / 4.0;
-  
-  // Calculate gradient magnitude at each pixel
-  for (let y = 1; y < height - 1; y++) {
-    for (let x = 1; x < width - 1; x++) {
-      const gx = Math.abs(img2d[y][x + 1] - img2d[y][x - 1]) / 2.0;
-      const gy = Math.abs(img2d[y + 1][x] - img2d[y - 1][x]) / 2.0;
-      const gradMag = Math.sqrt(gx * gx + gy * gy);
-      
-      // Distance from center
-      const dx = x - centerX;
-      const dy = y - centerY;
-      const r = Math.sqrt(dx * dx + dy * dy);
-      
-      if (r >= rThreshold) {
-        highFreqEnergy += gradMag;
-      } else {
-        lowFreqEnergy += gradMag;
-      }
-    }
-  }
-  
-  return highFreqEnergy / (lowFreqEnergy + 1e-10);
-}
-
-// Variance of Laplacian - measures focus quality independent of edge count
-// Focuses on center region where specimen typically is
+// Variance of Laplacian. Higher means sharper edges.
 function calculateVarianceOfLaplacian(grayscale, width, height) {
   const laplacianValues = [];
   
-  // Define center region (middle 50% of image)
+  // Define center region (middle 50% of image).
   const centerStartX = Math.floor(width * 0.25);
   const centerEndX = Math.floor(width * 0.75);
   const centerStartY = Math.floor(height * 0.25);
   const centerEndY = Math.floor(height * 0.75);
   
-  // Apply Laplacian only to center region
+  // Apply Laplacian only to center region.
   for (let y = centerStartY; y < centerEndY - 1; y++) {
     for (let x = centerStartX; x < centerEndX - 1; x++) {
       if (y < 1 || y >= height - 1 || x < 1 || x >= width - 1) continue;
@@ -161,14 +121,13 @@ function calculateVarianceOfLaplacian(grayscale, width, height) {
       const left = grayscale[y * width + (x - 1)];
       const right = grayscale[y * width + (x + 1)];
       
-      // Laplacian: -4*center + top + bottom + left + right
+      // Laplacian: -4*center + top + bottom + left + right.
       const laplacian = -4 * center + top + bottom + left + right;
       laplacianValues.push(laplacian);
     }
   }
   
-  // Calculate variance of Laplacian values
-  // High variance = sharp (crisp edges), Low variance = blurry (soft edges)
+  // Calculate variance of Laplacian values.
   const meanLaplacian = mean(laplacianValues);
   const variance = laplacianValues.reduce((sum, val) => sum + Math.pow(val - meanLaplacian, 2), 0) / laplacianValues.length;
   
@@ -203,7 +162,10 @@ export async function analyzeFossilQuality(imageDataUrl) {
       const contrastMetric = calculateCenterEdgeContrast(grayscale, canvas.width, canvas.height);
       const sharpnessMetric = calculateVarianceOfLaplacian(grayscale, canvas.width, canvas.height);
       
-      console.log("Raw metrics:", { lightingMean, contrastMetric, sharpnessMetric });
+      // Optional debug logging.
+      if (import.meta?.env?.DEV) {
+        console.log("Raw metrics:", { lightingMean, contrastMetric, sharpnessMetric });
+      }
       
       // Rate each metric
       const metrics = {
@@ -215,10 +177,10 @@ export async function analyzeFossilQuality(imageDataUrl) {
         sharpness_rating: rateValue(sharpnessMetric, IMAGE_QUALITY_THRESHOLDS.sharpness_metric.thresholds)
       };
       
-      // Generate feedback messages
+      // Generate feedback messages.
       const feedback = [];
       
-      // Lighting feedback
+      // Lighting feedback.
       if (metrics.lighting_rating === "Very Poor" || metrics.lighting_rating === "Poor") {
         feedback.push({ type: "warning", message: "Image too dark - increase lighting" });
       } else if (metrics.lighting_rating === "Intermediate") {
@@ -227,7 +189,7 @@ export async function analyzeFossilQuality(imageDataUrl) {
         feedback.push({ type: "success", message: "Lighting quality is good" });
       }
       
-      // Sharpness feedback
+      // Sharpness feedback.
       if (metrics.sharpness_rating === "Very Poor" || metrics.sharpness_rating === "Poor") {
         feedback.push({ type: "warning", message: "Image is blurry - hold camera steady" });
       } else if (metrics.sharpness_rating === "Intermediate") {
@@ -236,7 +198,7 @@ export async function analyzeFossilQuality(imageDataUrl) {
         feedback.push({ type: "success", message: "Sharpness is good" });
       }
       
-      // Contrast feedback
+      // Contrast feedback.
       if (metrics.contrast_rating === "Very Poor" || metrics.contrast_rating === "Poor") {
         feedback.push({ type: "warning", message: "Low contrast - adjust lighting or exposure" });
       } else if (metrics.contrast_rating === "Intermediate") {

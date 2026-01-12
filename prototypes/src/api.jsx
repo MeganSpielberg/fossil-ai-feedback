@@ -1,7 +1,19 @@
-import { analyzeFossilQuality } from './utils/imageAnalysis';
-import { supabase, uploadImageToStorage, getDeviceInfo } from './utils/supabase';
+/**
+ * API layer for the prototype app.
+ *
+ * Important notes:
+ * - Image quality analysis runs locally in the browser.
+ * - Upload and database writes go to Supabase.
+ */
+import { analyzeFossilQuality } from "./utils/imageAnalysis";
+import { supabase, uploadImageToStorage, getDeviceInfo } from "./utils/supabase";
 
-// Main API call for image analysis (now runs locally)
+/**
+ * Run local image analysis on a base64 image.
+ *
+ * @param {string} base64Image Base64 data URL for a JPEG image.
+ * @returns {Promise<{metrics: object, feedback: Array<{type: string, message: string}>}>}
+ */
 export const analyzeImage = async (base64Image) => {
   try {
     const result = await analyzeFossilQuality(base64Image);
@@ -12,7 +24,17 @@ export const analyzeImage = async (base64Image) => {
   }
 };
 
-// Submit all prototypes' images in a single transaction
+/**
+ * Submit the full study session to Supabase.
+ *
+ * This does three things:
+ * 1. Creates a `submissions` row.
+ * 2. Uploads all images to the `submissions` storage bucket.
+ * 3. Creates `submission_prototype` rows and `images` rows.
+ *
+ * The database writes are not a real transaction, so we attempt best effort rollback
+ * by deleting rows if a later insert fails.
+ */
 export const submitAllImages = async (
   submissionId,
   submissionDetails,
@@ -22,10 +44,10 @@ export const submitAllImages = async (
   flashlightData = {}
 ) => {
   try {
-    // Get device information
+    // Record device info so later analysis can group by device type.
     const deviceInfo = getDeviceInfo();
     
-    // Step 1: Create the submission record
+    // Step 1: Create the submission record.
     const { data: submission, error: submissionError } = await supabase
       .from('submissions')
       .insert({
@@ -42,7 +64,7 @@ export const submitAllImages = async (
 
     const submissionId_db = submission.id;
 
-    // Step 2: Upload all images to storage first
+    // Step 2: Upload all images to storage first.
     const allUploadedImages = [];
     for (const [protoKey, images] of Object.entries(imagesByPrototype)) {
       const protoNum = parseInt(protoKey.replace(/^p?/, ""), 10);
@@ -64,12 +86,16 @@ export const submitAllImages = async (
       }
     }
 
-    // Step 3: Create all database records in a transaction
-    // First, create submission_prototype records for each prototype
+    // Step 3: Create database records.
+    // First, create submission_prototype records for each prototype.
     const submission_prototype_records = [];
-    const prototypeNums = [...new Set(Object.entries(imagesByPrototype)
-      .filter(([_, images]) => images && images.length > 0)
-      .map(([protoKey, _]) => parseInt(protoKey.replace(/^p?/, ""), 10)))];
+    const prototypeNums = [
+      ...new Set(
+        Object.entries(imagesByPrototype)
+          .filter(([, images]) => images && images.length > 0)
+          .map(([protoKey]) => parseInt(protoKey.replace(/^p?/, ""), 10))
+      ),
+    ];
 
     for (const protoNum of prototypeNums) {
       const timeKey = `p${protoNum}`;
@@ -92,7 +118,7 @@ export const submitAllImages = async (
       throw protoError;
     }
 
-    // Step 4: Create image records linked to submission_prototype
+    // Step 4: Create image records linked to submission_prototype.
     const imageRecords = [];
     for (const uploadedImg of allUploadedImages) {
       const protoSubmission = protoSubmissions.find(

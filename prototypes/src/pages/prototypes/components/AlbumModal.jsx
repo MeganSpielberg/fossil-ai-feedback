@@ -2,6 +2,12 @@ import React from "react";
 import { X, Check } from "lucide-react";
 import "../../../css/components/AlbumModal.css";
 
+/**
+ * Album modal.
+ *
+ * Shows captured images, lets the user delete images, and triggers final submit.
+ */
+
 function AlbumModal({
   isOpen,
   onClose,

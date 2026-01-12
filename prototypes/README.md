@@ -1,16 +1,106 @@
-# React + Vite
+# Fossil AI Feedback Prototypes
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This folder contains a small React app used for a usability study.
+Users capture photos using three prototypes and the app uploads the results to Supabase.
 
-Currently, two official plugins are available:
+The image quality analysis runs in the browser.
+There is no remote analysis service in this prototype app.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Quick start
 
-## React Compiler
+Install dependencies:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+`npm install`
 
-## Expanding the ESLint configuration
+Create a `.env` file in this folder with:
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+`VITE_SUPABASE_URL=...`
+`VITE_SUPABASE_KEY=...`
+
+Run the dev server:
+
+`npm run dev`
+
+## How the app works
+
+The main state machine is in `src/App.jsx`.
+
+1. On load, the app fetches a testing order from Supabase.
+2. The Home page collects submission details.
+3. The user completes the next prototype in their assigned order.
+4. Each prototype captures images locally.
+5. When all three prototypes are done, the app uploads all images and writes database records.
+
+## Prototypes
+
+Prototype 1 is baseline capture.
+It provides no automated analysis.
+
+Prototype 2 shows post capture feedback.
+Each captured image is analyzed after capture.
+
+Prototype 3 shows real time feedback.
+It analyzes frames on an interval while the camera is active.
+
+## Image analysis
+
+`src/utils/imageAnalysis.js` computes:
+
+- Lighting mean from the grayscale image
+- Sharpness using variance of Laplacian
+- Contrast using center versus edge brightness difference
+
+Each metric is rated on five levels.
+The UI displays three levels by mapping those ratings into three feedback types:
+
+- warning for very poor and poor
+- info for intermediate
+- success for good and very good
+
+The UI uses the feedback type to pick colors.
+
+## Supabase usage
+
+This app uses Supabase for:
+
+- Database tables
+- Storage bucket named `submissions` for uploaded images
+
+Environment variables are read in `src/utils/supabase.js`.
+
+Tables used by the app:
+
+`testing_orders`
+- `order_sequence` string like `p1,p2,p3`
+- `completions` number
+
+`submissions`
+- `username`
+- `title`
+- `location`
+- `testing order` stores the selected `testing_orders.id`
+- `device` JSON object
+
+`submission_prototype`
+- `submission_id` foreign key to `submissions.id`
+- `prototype_name` string like `Prototype 1`
+- `time_spent` JSON object
+- `flashlight_used` boolean
+
+`images`
+- `filename`
+- `image_url`
+- `submission_prototype_id` foreign key to `submission_prototype.id`
+
+## Key files
+
+`src/App.jsx` controls navigation and submission lifecycle.
+`src/api.jsx` contains local analysis and Supabase submission logic.
+`src/pages/HomePage.jsx` collects user inputs and shows assigned prototype order.
+`src/pages/prototypes/Prototype1.jsx` capture only.
+`src/pages/prototypes/Prototype2.jsx` capture plus post capture feedback.
+`src/pages/prototypes/Prototype3.jsx` capture plus real time feedback.
+`src/pages/prototypes/components/CameraView.jsx` shared camera UI.
+`src/pages/prototypes/components/AlbumModal.jsx` review and submit.
+`src/utils/useTimeTracking.js` tracks time spent in instructions and active use.
+

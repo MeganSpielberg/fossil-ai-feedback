@@ -2,6 +2,13 @@ import React, { useEffect, useState } from "react";
 import { Camera, Images } from "lucide-react";
 import "../../../css/components/CameraView.css";
 
+/**
+ * Shared camera UI.
+ *
+ * The parent page owns the MediaStream and passes refs for the video and canvas.
+ * This component is only responsible for rendering and basic UI actions.
+ */
+
 function CameraView({
   isCameraActive,
   videoRef,
@@ -20,15 +27,15 @@ function CameraView({
   const [captureFlash, setCaptureFlash] = useState(false);
 
   const handleCapture = () => {
-    // Trigger visual flash effect
+    // Trigger a short visual flash effect.
     setCaptureFlash(true);
     setTimeout(() => setCaptureFlash(false), 300);
 
-    // Call the original capture handler
+    // Call the capture handler provided by the parent.
     onCapture();
   };
 
-  // Pause/resume the video element based on `paused` prop
+  // Pause or resume the video element based on `paused`.
   useEffect(() => {
     const video = videoRef?.current;
     if (!video || !isCameraActive) return;
@@ -41,8 +48,8 @@ function CameraView({
           playPromise.catch(() => {});
         }
       }
-    } catch (e) {
-      // no-op; pausing might not be supported in some states
+    } catch {
+      // No action needed. Some browsers may throw in some states.
     }
   }, [paused, isCameraActive, videoRef]);
 

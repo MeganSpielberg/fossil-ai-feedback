@@ -2,6 +2,13 @@ import React from "react";
 import { FileText } from "lucide-react";
 import "../../../css/components/FeedbackPanel.css";
 
+/**
+ * Feedback panel.
+ *
+ * Expects a list of feedback items with a `type` and `message`.
+ * The type is used for styling.
+ */
+
 function FeedbackPanel({ feedback, children, compact = false }) {
   if (!feedback || feedback.length === 0) return null;
 

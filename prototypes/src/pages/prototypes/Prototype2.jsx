@@ -9,6 +9,13 @@ import "../../css/pages/PrototypePage.css";
 import "../../css/pages/Prototype2.css";
 import { AiOutlineClose } from "react-icons/ai";
 
+/**
+ * Prototype 2.
+ *
+ * Post capture feedback.
+ * After each capture, the image is analyzed and the user is asked to keep or discard it.
+ */
+
 function Prototype2({
   setCurrentPage,
   submissionDetails,
@@ -27,16 +34,14 @@ function Prototype2({
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
-  // Initialize time tracking
+  // Track time spent in instructions and active use.
   const { startInstructionsTimer, stopInstructionsTimer, getFinalTimeData } =
     useTimeTracking("Prototype2");
 
-  // Start timer for instructions since they show by default
+  // Start the instructions timer since the modal is open by default.
   useEffect(() => {
-    if (showInstructions) {
-      startInstructionsTimer();
-    }
-  }, []); // Only run on mount
+    startInstructionsTimer();
+  }, [startInstructionsTimer]);
 
   const prototypeNum = 2;
   const title = "Post-capture feedback";
@@ -66,7 +71,7 @@ function Prototype2({
       alert("Could not access camera: " + error.message);
     }
   };
-  // Set video source when stream is available - no delay
+  // Set the video element source as soon as the stream is available.
   useEffect(() => {
     if (stream && videoRef.current && isCameraActive) {
       videoRef.current.srcObject = stream;
@@ -93,7 +98,7 @@ function Prototype2({
             advanced: [{ torch: !isTorchOn }],
           });
           setIsTorchOn(!isTorchOn);
-          // Track that flashlight was used at least once
+          // Track that flashlight was used at least once.
           if (!isTorchOn) {
             setFlashlightUsed(true);
           }
@@ -135,7 +140,7 @@ function Prototype2({
       feedback,
       metrics,
     };
-    // Hold new image for review; only add if user clicks Keep
+    // Hold new image for review. Only add if user clicks Keep.
     setLastCaptured(newImage);
     setShowPostOverlay(true);
   };
@@ -152,7 +157,7 @@ function Prototype2({
 
     setIsSaving(true);
     try {
-      // Get final time data
+      // Get final time data.
       const timeData = getFinalTimeData();
 
       await savePrototypeImages(
