@@ -1,9 +1,9 @@
-Effect of Image Quality Feedback on Fossil Photo
+﻿Effect of Image Quality Feedback on Fossil Photo
 Submissions in Citizen Science
-Megan Spielberg
-Fontys University of Applied Sciences
+Author
+[Institution]
 Eindhoven, The Netherlands
-m.spielberg@student.fontys.nl
+[contact email]
 
 Abstract
 Citizen science projects often depend on photographs submitted by volunteers. In
@@ -32,8 +32,8 @@ scientific data across diverse domains. These include ecology, biodiversity moni
 and paleontology (Silvertown, 2009; Abdul-Rahman, Zwitter, and Haleem, 2025). By enabling nonexperts to contribute observations, citizen science projects can expand and accelerate data collection
 in addition to fostering public engagement with scientific research. However, the scientific value of
 citizen-contributed data is highly dependent on its quality, especially when observations are submitted
-in the form of photographs (López-Guillén et al., 2024), (Eijkelboom et al., 2024).
-Fontys University of Applied Sciences, Master of Applied IT Eindhoven, January 4, 2026.
+in the form of photographs (López-Guillén et al., 2024), ([Domain Expert] et al., 2024).
+[Institution], Master of Applied IT Eindhoven, January 4, 2026.
 
 Image-based submissions are now included in many citizen science platforms, because they allow
 experts and automated systems to validate observations remotely. In fields such as paleontology,
@@ -46,12 +46,12 @@ Paleontological citizen science has distinct challenges for image-based data col
 often fragmentary, partially embedded in matrix material, and visually similar to their surrounding
 background. Accurate identification often depends on subtle morphological features that need good
 lighting, sufficient sharpness, clear contrast between specimen and background, the inclusion of scale
-references, and multiple, relevant viewing angles (Eijkelboom et al., 2024). As a result, variations
+references, and multiple, relevant viewing angles ([Domain Expert] et al., 2024). As a result, variations
 in photographic quality can directly affect whether a submission can be meaningfully evaluated by
 experts or automated systems.
-Within this context, projects such as LegaSea aim to involve citizen scientists in the documentation
+Within this context, projects such as [Project] aim to involve citizen scientists in the documentation
 and identification of fossil finds. The current submission workflow, implemented through platforms
-such as Oervondstchecker (Naturalis Biodiversity Center, 2025), allows users to upload photographs
+such as Oervondstchecker ([Partner Organization], 2025), allows users to upload photographs
 and metadata for expert review. While this approach is accessible and scalable, it places the responsibility for image quality entirely on the contributor and does not guide the image capture process.
 Consequently, quality control occurs only after submission, often requiring follow-up communication
 or resulting in unusable data.
@@ -116,7 +116,7 @@ The objective was to create a method for measuring image quality that is both ob
 on an experiment conducted by a paleontologist. The system incorporates the expert’s experience and
 includes subjective grading. This grading combines both quantitative and qualitative assessments.
 The grading system is based on a dataset of 100 fossil images submitted by citizen scientists. These
-images were evaluated by paleontologist Isaak Eijkelboom using a scale from one (very poor) to five
+images were evaluated by paleontologist [Domain Expert] using a scale from one (very poor) to five
 (very good). The criteria for grading included lighting, sharpness, and the contrast between the fossil
 and its background. Additionally, the evaluation considered the presence of a scale, the type of scale
 shown in the image, and whether the fossil is depicted from multiple, relevant angles.
@@ -165,7 +165,7 @@ prototype, while the second part focuses on usability evaluation through a surve
 images are used to assess the impact of the guidance and feedback on image quality, whereas the
 usability test measures how effectively the feedback conveys actionable steps.
 Several preliminary usability tests were conducted with ICT students and project stakeholders from
-Naturalis Biodiversity Center to evaluate the technical stability and usability of the prototypes. Testers
+[Partner Organization] to evaluate the technical stability and usability of the prototypes. Testers
 received a link to the live application hosted on a server. For each prototype, testers followed the
 same process:
 1. Taking one or more images.
@@ -181,7 +181,7 @@ included fossil hunters, paleontologists, and citizen scientists. A power analys
 least 28 participants were needed to detect a medium-sized effect, which was determined using the
 G*Power application. After receiving only three responses from the fossil hunter group, the criteria
 were broadened to include anyone who could read/speak English reasonably well and had a phone.
-The test was advertised on the Fontys ICT campus, as well as in Facebook groups, sub-reddits, and
+The test was advertised on the [Institution ICT] campus, as well as in Facebook groups, sub-reddits, and
 forums related to paleontology. The testing period lasted for 14 days. Unfortunately, the function
 designed to assign a balanced random testing order failed for this test. As a result, most participants
 tested the prototype in the same order: p1 (baseline) -> p3 (real-time) -> p2 (post-capture).
@@ -605,7 +605,7 @@ feedback methods and more thorough testing in real-world situations.
 Abdul-Rahman, Zwitter, and Haleem (2025). “A systematic literature review on the role of artificial
 intelligence in citizen science”. In: AI and Society. DOI: https://doi.org/10.1007/s44163025- 00437- z. URL: https://link.springer.com/article/10.1007/s44163- 02500437-z.
 Brooke, John (Nov. 1995). “SUS: A quick and dirty usability scale”. In: Usability Eval. Ind. 189.
-Eijkelboom, Isaak et al. (2024). “Making sense of fossils and artefacts: a review of best practices
+[Domain Expert] et al. (2024). “Making sense of fossils and artefacts: a review of best practices
 for the design of a successful workflow for machine learning-assisted citizen science projects”. In:
 PeerJ. DOI: 10.7717/peerj.18927. URL: https://peerj.com/articles/18927.
 Google (2025). How AI-powered Camera Coach on Pixel 10 Helps Take Amazing Photos. Accessed:
@@ -621,7 +621,7 @@ Dataset and deep convolutional neural networks”. In: Paleobiology 49.1, pp. 1�
 paleobiology / article / automatic - taxonomic - identification - based - on - the fossil - image - dataset - 415000 - images - and - deep - convolutional - neural networks/4863E2FDE20D6115415EE5FE232B9DCD.
 López-Guillén, Eduard et al. (Jan. 2024). “Strengths and Challenges of Using iNaturalist in Plant
 Research with Focus on Data Quality”. In: Diversity 16, p. 42. DOI: 10.3390/d16010042.
-Naturalis Biodiversity Center (2025). Oervondstchecker. Accessed: 2025-10-06. URL: https://
+[Partner Organization] (2025). Oervondstchecker. Accessed: 2025-10-06. URL: https://
 www.oervondstchecker.nl.
 Nielsen, Jakob (1994). Usability Engineering. Morgan Kaufmann.
 Norman, Don (2013). The Design of Everyday Things. Basic Books.

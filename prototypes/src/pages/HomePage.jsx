@@ -287,8 +287,7 @@ function HomePage({
             <div className="modal-body">
               <h4>Data Collection and Usage</h4>
               <p>
-                This research application is conducted by Fontys University of
-                Applied Sciences. We collect and process the following data:
+                This research application is conducted by [Institution]. We collect and process the following data:
               </p>
               <ul>
                 <li>Username (pseudonymized identifier)</li>
@@ -324,7 +323,7 @@ function HomePage({
               <h4>Contact Information</h4>
               <p>
                 For questions about data privacy or to exercise your rights,
-                please contact m.spielberg@student.fontys.nl
+                please contact [contact email]
               </p>
             </div>
           </div>

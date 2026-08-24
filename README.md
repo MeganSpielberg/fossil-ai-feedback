@@ -1,10 +1,8 @@
-# Effect of Image Quality Feedback on Fossil Photo Submissions in Citizen Science
+﻿# Effect of Image Quality Feedback on Fossil Photo Submissions in Citizen Science
 
 <div align="center">
 
-[![Project Page](https://img.shields.io/badge/Project-Page-2563eb?style=for-the-badge)](https://meganspielberg.github.io/fossil-ai-feedback/)
-[![Paper](https://img.shields.io/badge/Paper-PDF-dc2626?style=for-the-badge)](https://meganspielberg.github.io/fossil-ai-feedback/static/pdfs/Research_Paper_LegaSea.pdf)
-[![Poster](https://img.shields.io/badge/Poster-PDF-10b981?style=for-the-badge)](https://meganspielberg.github.io/fossil-ai-feedback/static/pdfs/ResearchPosterLegaSeaFinalV1.pdf)
+[![Project Page](https://img.shields.io/badge/Project-Page-2563eb?style=for-the-badge)]([author].github.io/fossil-ai-feedback/)
 
 </div>
 
@@ -12,7 +10,7 @@
 
 <p align="center">
   <i>Master's project investigating real-time image quality feedback for citizen science fossil photography</i><br>
-  Fontys University of Applied Sciences × Naturalis Biodiversity Center
+  [Institution] × [Partner Organization]
 </p>
 
 ---
@@ -103,7 +101,7 @@ Image quality was measured using objective metrics (lighting, sharpness, contras
 
 <div align="center">
 
-**[→ View Interactive Project Page ←](https://meganspielberg.github.io/fossil-ai-feedback/)**
+**[→ View Interactive Project Page ←]([author].github.io/fossil-ai-feedback/)**
 
 *Includes research abstract, visualizations, prototype demo video, full paper & poster*
 
@@ -161,13 +159,13 @@ jupyter notebook results_analysis/final_test/
 If you use this work in your research, please cite:
 
 ```bibtex
-@misc{Spielberg2026FossilAI,
+@misc{Author2026FossilAI,
   title={Effect of Image Quality Feedback on Fossil Photo Submissions in Citizen Science},
-  author={Spielberg, Megan},
+  author={Author},
   year={2026},
-  institution={Fontys University of Applied Sciences},
+  institution={[Institution]},
   howpublished={Master's project},
-  url={https://meganspielberg.github.io/fossil-ai-feedback/}
+  url={[author].github.io/fossil-ai-feedback/}
 }
 ```
 
@@ -175,9 +173,9 @@ If you use this work in your research, please cite:
 
 ## Acknowledgments
 
-- **Naturalis Biodiversity Center** — Collaboration and domain expertise
-- **Isaak Eijkelboom** (Paleontologist) — Expert image quality ratings
-- **Fontys University of Applied Sciences** — Academic support
+- **[Partner Organization]** — Collaboration and domain expertise
+- **[Domain Expert]** (Paleontologist) — Expert image quality ratings
+- **[Institution]** — Academic support
 - Project page template adapted from [Nerfies](https://nerfies.github.io/)
 
 ---
@@ -196,12 +194,7 @@ The project website and documentation are licensed under a <a rel="license" href
 
 ## Contact
 
-**Megan Spielberg**  
-Fontys University of Applied Sciences  
-GitHub: [@MeganSpielberg](https://github.com/MeganSpielberg)
+**Author**  
+[Institution]  
+GitHub: [@[Author]](https://github.com/[Author])
 
----
-
-<p align="center">
-  <b>Related Projects:</b> <a href="https://georgianagmanolache.github.io/legasea/">LegaSea Citizen Science Lab</a>
-</p>
