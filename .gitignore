@@ -41,3 +41,6 @@ prototypes/backend/*
 
 # PDFs
 static/pdfs/
+
+# Videos
+static/videos/
