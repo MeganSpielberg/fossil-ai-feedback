@@ -38,3 +38,6 @@ coverage/
 !static/images/*.png
 !static/images/*.jpeg
 prototypes/backend/*
+
+# PDFs
+static/pdfs/
